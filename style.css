@@ -1,0 +1,116 @@
+/* Configuración Global para evitar Scroll */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background-color: #ffffff;
+}
+
+/* Fondo de Branding */
+.bg-custom-branding {
+    background-image: url('image_4.png');
+    background-size: cover;
+    background-position: center;
+}
+
+/* Tamaños de Logo Adaptables */
+.img-logo-main {
+    max-height: 25vh;
+    width: auto;
+    height: auto;
+}
+
+@media (min-width: 768px) {
+    .img-logo-main {
+        max-height: 50vh;
+    }
+}
+
+/* Diseño Móvil Específico */
+@media (max-width: 767px) {
+    .mobile-curve {
+        clip-path: ellipse(120% 100% at 50% 0%);
+        height: 45vh;
+    }
+    .form-container {
+        height: 55vh;
+    }
+}
+
+/* Utilidades de Formulario (Clases reutilizables) */
+.input-custom {
+    width: 100%;
+    padding: 0.75rem 1.25rem;
+    background-color: #f9fafb;
+    border: 1px solid #f3f4f6;
+    border-radius: 1rem;
+    outline: none;
+    transition: all 0.2s;
+    font-size: 1rem;
+}
+
+@media (min-width: 768px) {
+    .input-custom {
+        padding: 1rem 1.25rem;
+        font-size: 1.125rem;
+    }
+}
+
+.input-custom:focus {
+    background-color: #fff;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.label-custom {
+    display: block;
+    color: #1a1a4b;
+    font-weight: 900;
+    margin-bottom: 0.25rem;
+    margin-left: 0.25rem;
+    text-transform: uppercase;
+    font-size: 0.625rem; /* 10px */
+    letter-spacing: 0.1em;
+}
+
+@media (min-width: 768px) {
+    .label-custom {
+        font-size: 0.75rem; /* 12px */
+    }
+}
+
+.btn-primary {
+    width: 100%;
+    background-color: #5e72e4;
+    color: white;
+    font-weight: 900;
+    padding: 1rem;
+    border-radius: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 1.125rem;
+    transition: all 0.2s;
+    box-shadow: 0 10px 15px -3px rgba(94, 114, 228, 0.2);
+}
+
+.btn-primary:hover {
+    background-color: #4859cc;
+}
+
+.btn-primary:active {
+    transform: scale(0.95);
+}
+
+.forgot-password {
+    font-size: 0.625rem;
+    color: #9ca3af;
+    font-weight: 700;
+    text-transform: uppercase;
+    transition: color 0.2s;
+}
+
+.forgot-password:hover {
+    color: #3b82f6;
+}
