@@ -1367,9 +1367,6 @@ html[data-tema="oscuro"] .tabbar button.activo { color: var(--rojo); }
 html[data-tema="oscuro"] .hojas { color: #1d1d22; color-scheme: light; --tinta: #1d1d22; --gris: #6f6a72; --rojo: #d3141b; }
 @media print { html[data-tema="oscuro"], html[data-tema="oscuro"] body { background: #fff !important; } }
 
-/* ===== Olas que siguen el dedo / mouse ===== */
-#olas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none; }
-@media print { #olas { display: none !important; } }
 
 
 /* ===== App instalada (PWA): la barra de estado se funde con la página ===== */
@@ -1749,7 +1746,6 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
 <symbol id="i-auto" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 3.8a8.2 8.2 0 0 0 0 16.4z" fill="currentColor"/></symbol>
 </svg>
 <div class="fondo" aria-hidden="true"></div>
-<canvas id="olas" aria-hidden="true"></canvas>
 <div class="app">
 
     <header class="top">
@@ -1801,6 +1797,23 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
     <main>
     <!-- ================= INICIO ================= -->
     <section class="vista activa" id="vista-inicio" aria-label="Inicio">
+        <section class="leon-fx" id="leon-fx" aria-label="Datos Fijos, Comercializadora Rondón">
+            <nav class="fx-top" aria-label="Accesos rápidos">
+                <button type="button" onclick="irAVista('resultados')">Resultados</button>
+                <button type="button" onclick="irAVista('fichas')">Fichas</button>
+                <button type="button" onclick="irAVista('descargas')">Descargas</button>
+            </nav>
+            <div class="fx-centro">
+                <h2 class="fx-titulo" aria-label="Datos Fijos">
+                    <span class="fx-w fx-izq" aria-hidden="true"><span class="fx-in">DATOS</span></span>
+                    <span class="fx-w fx-der" aria-hidden="true"><span class="fx-in">FIJOS</span></span>
+                </h2>
+                <div class="fx-marco" aria-hidden="true"></div>
+                <div class="fx-leon"><img id="fx-img" alt="Leoncito mascota de Comercializadora Rondón" decoding="async"></div>
+            </div>
+            <div class="fx-pie"><span>Comercializadora Rondón</span><span>Juega inteligente</span></div>
+        </section>
+
         <div class="hero">
             <div class="hero-texto">
                 <span class="chip-marca"><svg class="ico " aria-hidden="true"><use href="#i-star"/></svg>Comercializadora Rondón</span>
@@ -4065,90 +4078,6 @@ html[data-tema="oscuro"] .visor-ficha .visor-ficha-n { color: #f5f5f7; }
     })(performance.now());
 })();
 </script>
-<script id="olas-js">
-/* Olas: ondas y resplandor que siguen el mouse o el dedo.
-   Claro: amarillo + naranja · Oscuro: amarillo + rojo. */
-(function () {
-    var cv = document.getElementById('olas');
-    if (!cv || !cv.getContext) return;
-    var mm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (window.reducirMovimiento && window.reducirMovimiento()) return;
-    var ctx = cv.getContext('2d', { alpha: true, desynchronized: true });
-    var tactil = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-    var W = 0, H = 0, dpr = 1, rip = [], raf = 0;
-    var px = 0, py = 0, bx = 0, by = 0, act = 0, acc = 0, has = false, par = 0, ultimo = 0;
-
-    function size() {
-        dpr = Math.min(window.devicePixelRatio || 1, tactil ? 1.5 : 2);
-        W = window.innerWidth; H = window.innerHeight;
-        cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    function pal() {
-        return document.documentElement.getAttribute('data-tema') === 'oscuro'
-            ? { a: [255, 214, 64], b: [255, 48, 48], suma: true, anillo: .75, mancha: .6 }
-            : { a: [255, 196, 0], b: [255, 118, 0], suma: false, anillo: .95, mancha: .85 };
-    }
-    function rgba(c, a) { return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a.toFixed(3) + ')'; }
-    function start() { if (!raf) raf = requestAnimationFrame(frame); }
-    function spawn(x, y, grande) {
-        if (rip.length > 45) rip.shift();
-        rip.push({ x: x, y: y, t0: performance.now(), max: grande ? 260 : 150, n: par++ % 2 });
-        start();
-    }
-    function mover(x, y) {
-        if (!has) { has = true; px = bx = x; py = by = y; }
-        var d = Math.hypot(x - px, y - py);
-        px = x; py = y; acc += d; act = Math.min(1, act + d / 60);
-        if (acc > 34) { acc = 0; spawn(x, y, false); }
-        start();
-    }
-    function tocar(x, y) { has = true; px = bx = x; py = by = y; acc = 0; act = Math.max(act, .6); spawn(x, y, true); }
-
-    function frame(now) {
-        raf = 0;
-        ctx.clearRect(0, 0, W, H);
-        var p = pal();
-        ctx.globalCompositeOperation = p.suma ? 'lighter' : 'source-over';
-        /* Suavizado por tiempo (no por cuadro): se ve igual a 60, 120, 144 o 180 Hz */
-        var dt = ultimo ? Math.min(.05, (now - ultimo) / 1000) : 0; ultimo = now;
-        var k = 1 - Math.pow(.86, dt * 60);
-        bx += (px - bx) * k; by += (py - by) * k; act *= Math.pow(.94, dt * 60);
-        if (has && act > .02) {
-            var r = 90 + act * 90, g = ctx.createRadialGradient(bx, by, 0, bx, by, r);
-            g.addColorStop(0, rgba(p.a, .55 * p.mancha * act));
-            g.addColorStop(.55, rgba(p.b, .32 * p.mancha * act));
-            g.addColorStop(1, rgba(p.b, 0));
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(bx, by, r, 0, 6.2832); ctx.fill();
-        }
-        for (var i = rip.length - 1; i >= 0; i--) {
-            var o = rip[i], t = (now - o.t0) / 1100;
-            if (t >= 1) { rip.splice(i, 1); continue; }
-            if (t < 0) t = 0;
-            var e = 1 - Math.pow(1 - t, 3), fade = Math.pow(1 - t, 1.6);
-            for (var k = 0; k < 3; k++) {
-                var rr = o.max * e - k * 16;
-                if (rr <= 0) continue;
-                ctx.beginPath(); ctx.arc(o.x, o.y, rr, 0, 6.2832);
-                ctx.lineWidth = Math.max(1, (7 - k * 2) * (1 - t) + 1);
-                ctx.strokeStyle = rgba(((k + o.n) % 2) ? p.b : p.a, p.anillo * fade * (1 - k * .22));
-                ctx.stroke();
-            }
-        }
-        if (rip.length || act > .02) raf = requestAnimationFrame(frame);
-        else { ctx.clearRect(0, 0, W, H); ultimo = 0; }
-    }
-
-    window.addEventListener('resize', size);
-    /* Mouse y lápiz */
-    window.addEventListener('pointermove', function (e) { if (e.pointerType !== 'touch') mover(e.clientX, e.clientY); }, { passive: true });
-    window.addEventListener('pointerdown', function (e) { if (e.pointerType !== 'touch') tocar(e.clientX, e.clientY); }, { passive: true });
-    /* Dedo (touchmove sigue disparándose aunque la página se desplace) */
-    window.addEventListener('touchstart', function (e) { var t = e.touches[0]; if (t) tocar(t.clientX, t.clientY); }, { passive: true });
-    window.addEventListener('touchmove', function (e) { var t = e.touches[0]; if (t) mover(t.clientX, t.clientY); }, { passive: true });
-    size();
-})();
-</script>
 <script id="salto-fichas-js">
 /* Toca/clic en una ficha y salta o baila. */
 (function () {
@@ -5245,5 +5174,145 @@ html[data-tema="oscuro"] .ficha-ui .ficha-etq { background: none; box-shadow: no
     pedir();
 })();
 </script>
+<link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+<style id="leon-fx-css">
+/* ===== Efecto "diente": palabra gigante con el león al centro que reacciona al scroll ===== */
+.leon-fx { --fs: clamp(64px, 17.5vw, 250px); --fx-txt: #4a5062; --fx-linea: rgba(40, 45, 60, .45); --p: 0;
+    position: relative; display: grid; grid-template-rows: auto 1fr auto; align-items: center;
+    min-height: clamp(520px, 84svh, 860px); margin: 8px 0 18px; padding: clamp(14px, 2.4vw, 28px) clamp(10px, 4vw, 72px);
+    border-radius: 32px; background: #fff; overflow: clip; box-shadow: 0 14px 38px rgba(140, 80, 20, .12); }
+html[data-tema="oscuro"] .leon-fx { --fx-txt: #7d86a0; --fx-linea: rgba(200, 205, 225, .35); background: #0c0c0f; box-shadow: none; }
+.fx-top, .fx-pie { display: flex; justify-content: space-between; gap: 12px; position: relative; z-index: 3;
+    font-size: .74rem; letter-spacing: .09em; text-transform: uppercase; color: var(--fx-txt); }
+.fx-top button { background: none; border: 0; padding: 12px 6px; min-height: 44px; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+.fx-top button:hover { color: var(--rojo); }
+.fx-centro { position: relative; display: grid; place-items: center; min-height: calc(var(--fs) * 2.1); }
+.fx-titulo { display: flex; justify-content: center; align-items: center; gap: calc(var(--fs) * .34); margin: 0; width: 100%;
+    font: 400 var(--fs)/.9 'Anton', Impact, 'Arial Narrow Bold', sans-serif; color: var(--fx-txt); letter-spacing: .005em; }
+.fx-w { display: block; will-change: transform; }
+.fx-izq { transform: translateX(calc(var(--p) * -9vw)); }
+.fx-der { transform: translateX(calc(var(--p) * 9vw)); }
+.fx-in { display: block; }
+.fx-marco { position: absolute; left: 50%; top: 52%; width: calc(var(--fs) * 1.35); height: calc(var(--fs) * 1.15); pointer-events: none;
+    border: 1px solid var(--fx-linea); transform: translate(-50%, -50%) translateY(calc(var(--p) * -34px));
+    background: linear-gradient(to top right, transparent calc(50% - .5px), var(--fx-linea) 50%, transparent calc(50% + .5px)); }
+.fx-leon { position: absolute; left: 50%; top: 50%; z-index: 2; pointer-events: none; will-change: transform;
+    transform: translate(-50%, -50%) translateY(calc(var(--p) * 70px)) scale(calc(1 + var(--p) * .2)) rotate(calc(var(--p) * -4deg)); }
+.fx-leon img { display: block; height: calc(var(--fs) * 2.05); width: auto; max-width: none; filter: drop-shadow(0 22px 24px rgba(60, 25, 0, .3)); }
+html[data-tema="oscuro"] .fx-leon img { filter: drop-shadow(0 22px 28px rgba(0, 0, 0, .75)); }
+/* entrada */
+.leon-fx:not(.dentro):not(.fx-quieto) .fx-in, .leon-fx:not(.dentro):not(.fx-quieto) .fx-leon img, .leon-fx:not(.dentro):not(.fx-quieto) .fx-marco { opacity: 0; }
+@keyframes fxPalabra { from { opacity: 0; transform: translateY(40%); } to { opacity: 1; transform: none; } }
+@keyframes fxLeon { from { opacity: 0; transform: translateY(9%) scale(.9); } to { opacity: 1; transform: none; } }
+@keyframes fxLinea { from { opacity: 0; } to { opacity: 1; } }
+.leon-fx.dentro .fx-in { animation: fxPalabra .9s cubic-bezier(.2, .8, .2, 1) backwards; }
+.leon-fx.dentro .fx-der .fx-in { animation-delay: .12s; }
+.leon-fx.dentro .fx-leon img { animation: fxLeon 1s .25s cubic-bezier(.2, .8, .2, 1) backwards; }
+.leon-fx.dentro .fx-marco { animation: fxLinea 1s .5s backwards; }
+.fx-quieto .fx-leon, .fx-quieto .fx-marco, .fx-quieto .fx-w { transform: none; }
+.fx-quieto .fx-leon { transform: translate(-50%, -50%); }
+.fx-quieto .fx-marco { transform: translate(-50%, -50%); }
+@media (prefers-reduced-motion: reduce) { html:not([data-anim="forzar"]) .leon-fx * { animation: none !important; } }
+/* El león del hero antiguo pasa a esta sección: el hero queda solo con su texto y botones */
+#vista-inicio .hero-leon { display: none; }
+#vista-inicio .hero { grid-template-columns: 1fr !important; min-height: 0; text-align: center; }
+#vista-inicio .hero-texto { padding-left: 0; }
+#vista-inicio .hero p { margin-inline: auto; }
+#vista-inicio .hero p::after { margin-inline: auto; background: linear-gradient(90deg, transparent, #f08a24, transparent); }
+#vista-inicio .hero-cta { justify-content: center; }
+/* Móvil: palabras apiladas y el león al centro, grande */
+@media (max-width: 760px) {
+    .leon-fx { --fs: 31vw; min-height: 0; border-radius: 26px; }
+    .fx-centro { min-height: calc(var(--fs) * 2.6); }
+    .fx-titulo { flex-direction: column; gap: calc(var(--fs) * .55); }
+    .fx-leon img { height: calc(var(--fs) * 2.55); }
+    .fx-marco { width: calc(var(--fs) * 1.7); height: calc(var(--fs) * 1.6); }
+    .fx-izq { transform: translateX(calc(var(--p) * -14vw)); } .fx-der { transform: translateX(calc(var(--p) * 14vw)); }
+}
+@media print { .leon-fx { display: none; } }
+</style>
+<script id="leon-fx-js">
+(function () {
+    'use strict';
+    var sec = document.getElementById('leon-fx'), img = document.getElementById('fx-img');
+    if (!sec || !img) return;
+    var centro = sec.querySelector('.fx-centro'), leon = sec.querySelector('.fx-leon');
+    var origen = document.querySelector('.hero-leon .mascota');
+    if (origen && origen.src) img.src = origen.src; else { leon.style.display = 'none'; return; }
+    var quieto = !!(window.reducirMovimiento && window.reducirMovimiento());
+    if (quieto) sec.classList.add('fx-quieto');
+    var mq = window.matchMedia ? window.matchMedia('(max-width: 760px)') : { matches: false };
+    var viaja = false, lw = 0, lh = 0, raf = 0, visibleSec = false;
+    var clamp = function (v) { return Math.max(0, Math.min(1, v)); };
+    var suave = function (x) { return x * x * (3 - 2 * x); };
+    var lerp = function (a, b, t) { return a + (b - a) * t; };
+
+    function medir() { lw = leon.offsetWidth; lh = leon.offsetHeight; }
+    function pedir() { if (!raf) raf = requestAnimationFrame(actualizar); }
+
+    /* En móvil el león sale del bloque y recorre toda la página; en escritorio vuelve a su sitio */
+    function modo() {
+        var quiero = !!mq.matches && !quieto;
+        if (quiero === viaja) return;
+        viaja = quiero;
+        if (viaja) {
+            document.body.appendChild(leon); leon.classList.add('viaja');
+            if (sec.classList.contains('dentro')) leon.classList.add('dentro');
+        } else {
+            centro.appendChild(leon); leon.classList.remove('viaja', 'dentro');
+            leon.style.transform = ''; leon.style.visibility = '';
+        }
+        medir(); pedir();
+    }
+
+    function actualizar() {
+        raf = 0;
+        var r = sec.getBoundingClientRect();
+        if (!r.height) { if (viaja) leon.style.visibility = 'hidden'; return; }      /* la pestaña Inicio está oculta */
+        sec.style.setProperty('--p', clamp(-r.top / (r.height * .9)).toFixed(3));
+        if (!viaja) return;
+        if (!lw) medir();
+        var W = window.innerWidth, H = window.innerHeight;
+        var c = centro.getBoundingClientRect(), ax = c.left + c.width / 2, ay = c.top + c.height / 2;
+        var q = suave(clamp(-r.top / (r.height * .75)));                              /* 0 = en el bloque · 1 = viaja libre */
+        var max = Math.max(1, document.documentElement.scrollHeight - H);
+        var t = clamp((window.scrollY || 0) / max), th = t * Math.PI * 6;             /* 3 idas y vueltas por la página */
+        var esc = .5, w = lw * esc;
+        var x0 = W / 2 + (W / 2 - w * .42) * Math.tanh(2.2 * Math.sin(th));           /* se pega a un borde y cruza al otro */
+        var y0 = H * .62 + Math.cos(th) * H * .06 + Math.sin(t * 70) * 9;
+        var rot0 = 10 * Math.sin(th * 2), s0 = esc;
+        var fin = suave(clamp((t - .93) / .07));                                      /* al llegar al final, se queda abajo al centro */
+        x0 = lerp(x0, W / 2, fin); y0 = lerp(y0, H - lh * .6 * .5 - 96, fin); rot0 *= 1 - fin; s0 = lerp(esc, .6, fin);
+        var x = lerp(ax, x0, q), y = lerp(ay, y0, q), s = lerp(1, s0, q), rot = lerp(0, rot0, q);
+        leon.style.visibility = 'visible';
+        leon.style.transform = 'translate3d(' + (x - lw / 2).toFixed(1) + 'px,' + (y - lh / 2).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg) scale(' + s.toFixed(3) + ')';
+    }
+
+    if ('IntersectionObserver' in window) {
+        new IntersectionObserver(function (es) {
+            if (es[0].isIntersecting) { sec.classList.add('dentro'); leon.classList.add('dentro'); pedir(); }
+        }, { threshold: 0.05 }).observe(sec);
+    } else { sec.classList.add('dentro'); leon.classList.add('dentro'); }
+
+    img.addEventListener('load', function () { medir(); pedir(); });
+    if (window.ResizeObserver) new ResizeObserver(function () { medir(); pedir(); }).observe(leon);
+    var vista = document.getElementById('vista-inicio');
+    if (vista && window.MutationObserver) new MutationObserver(pedir).observe(vista, { attributes: true, attributeFilter: ['class'] });
+    if (mq.addEventListener) mq.addEventListener('change', modo); else if (mq.addListener) mq.addListener(modo);
+    if (!quieto) {
+        window.addEventListener('scroll', pedir, { passive: true });
+        window.addEventListener('resize', function () { medir(); pedir(); });
+    }
+    modo(); medir(); pedir();
+})();
+</script>
+<style id="leon-fx-viaje-css">
+/* Móvil: el león vuela por toda la página de Inicio (su posición la calcula el script al hacer scroll) */
+.fx-leon.viaja { --fs: 31vw; position: fixed; left: 0; top: 0; z-index: 40; transform: none; will-change: transform; pointer-events: none; }
+.fx-leon.viaja:not(.dentro) img { opacity: 0; }
+.fx-leon.viaja.dentro img { animation: fxLeon 1s .25s cubic-bezier(.2, .8, .2, 1) backwards; }
+html.intro .fx-leon.viaja { opacity: 0; }
+@media print { .fx-leon.viaja { display: none; } }
+</style>
 </body>
 </html>
