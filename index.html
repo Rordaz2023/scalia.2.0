@@ -4,6 +4,45 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Datos Fijos | Comercializadora Rondón</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <script id="siempre-fresca">
+    /* Siempre en tiempo real: sin service worker, sin cachés guardadas y recarga si hay versión nueva. */
+    (function () {
+        var V = String(Date.now()); window.__V = V;
+        if (location.protocol === 'file:') return;
+        var guardia = function (k, ms) {
+            try { var t = +sessionStorage.getItem(k) || 0; if (Date.now() - t < ms) return false; sessionStorage.setItem(k, Date.now()); } catch (e) {}
+            return true;
+        };
+        /* 1) Elimina cualquier service worker y cachés que dejaron versiones anteriores */
+        (async function () {
+            var hubo = false;
+            try { if ('serviceWorker' in navigator) { var rs = await navigator.serviceWorker.getRegistrations(); for (var i = 0; i < rs.length; i++) { hubo = true; await rs[i].unregister(); } } } catch (e) {}
+            try { if (window.caches) { var ks = await caches.keys(); for (var j = 0; j < ks.length; j++) { hubo = true; await caches.delete(ks[j]); } } } catch (e) {}
+            if (hubo && guardia('df_limpio', 60000)) location.reload();
+        })();
+        /* 2) Si el navegador devuelve la página desde la memoria de "atrás/adelante", la recarga */
+        window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
+        /* 3) Compara con el servidor al abrir y al volver a la pestaña; recarga si hay una versión más nueva o cambió el día */
+        var dia = new Date().toDateString(), base = null;
+        function huella(r) { return (r.headers.get('etag') || '') + '|' + (r.headers.get('last-modified') || '') + '|' + (r.headers.get('content-length') || ''); }
+        function revisar() {
+            if (new Date().toDateString() !== dia && guardia('df_recarga', 20000)) { location.reload(); return; }
+            fetch(location.href.split('#')[0], { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+                var h = huella(r); if (h === '||') return;
+                var lm = Date.parse(r.headers.get('last-modified') || ''), doc = Date.parse(document.lastModified || '');
+                if (lm && doc && lm - doc > 2000 && guardia('df_recarga', 20000)) { location.reload(); return; }   /* se cargó una copia vieja */
+                if (base === null) { base = h; return; }
+                if (h !== base && guardia('df_recarga', 20000)) location.reload();
+            }).catch(function () {});
+        }
+        window.addEventListener('load', revisar);
+        window.addEventListener('online', revisar);
+        document.addEventListener('visibilitychange', function () { if (!document.hidden) revisar(); });
+    })();
+    </script>
     <link rel="manifest" href="manifest.json">
         <meta name="description" content="Datos fijos de la semana, fichas de animalitos, triples, ñapa y sorteos diarios. Comercializadora Rondón: juega inteligente.">
     <meta property="og:type" content="website">
@@ -1364,7 +1403,7 @@ html[data-tema="oscuro"] .visor-puntos i { background: rgba(255, 255, 255, .25);
 html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
 
     </style>
-    <script src="imagenes.js" onerror="void 0"></script>
+    <script>document.write('<script src="imagenes.js' + (window.__V && location.protocol !== 'file:' ? '?v=' + window.__V : '') + '" onerror="void 0"><\/script>');</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Roboto+Mono:wght@700&family=Poppins:wght@400;500;600;700;800&family=Kaushan+Script&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -2238,7 +2277,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                     const q = db.transaction('imgs').objectStore('imgs').openCursor();
                     q.onsuccess = () => {
                         const c = q.result;
-                        if (c) { imagenesCargadas[c.key] = c.value; c.continue(); } else resolve();
+                        if (c) { if (!(c.key in imagenesCargadas)) imagenesCargadas[c.key] = c.value; c.continue(); } else resolve();
                     };
                     q.onerror = () => resolve();
                 });
@@ -2790,9 +2829,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             });
         }
 
-        if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
-        }
+        /* Service worker desactivado a propósito: la página siempre se carga fresca desde el servidor. */
 
         document.addEventListener('DOMContentLoaded', async () => {
             crearEstructuraDias();
@@ -4986,7 +5023,8 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
         var emb = (typeof imagenesCargadas !== 'undefined' && imagenesCargadas) || window.IMAGENES_EMBED || {}, out = [];
         function add(u) { if (u && out.indexOf(u) < 0) out.push(u); }
         claves(n).forEach(function (k) { add(emb[k]); add(emb[k + '.png']); });   /* 1º lo incrustado / guardado */
-        claves(n).forEach(function (k) { EXT.forEach(function (e) { add(k + '.' + e); }); }); /* 2º archivos sueltos */
+        var q = (window.__V && location.protocol !== 'file:') ? '?v=' + window.__V : '';
+        claves(n).forEach(function (k) { EXT.forEach(function (e) { add(k + '.' + e + q); }); }); /* 2º archivos sueltos */
         return out;
     }
     function cargar(img, n, fin) {
