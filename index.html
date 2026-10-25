@@ -2261,12 +2261,12 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         function mostrarAnimal(indexDia, numero) {
             const img = document.getElementById(`animal-${indexDia}`);
             const key = String(numero);
-            img.onerror = () => { img.style.display = 'none'; };
-            img.onload = () => { img.style.display = 'block'; };
-            if (imagenesCargadas[key]) {
-                img.src = imagenesCargadas[key];
+            if (window.FichaImg) {
+                FichaImg.cargar(img, key, ok => { img.style.display = ok ? 'block' : 'none'; });
             } else {
-                img.src = `${RUTA_IMAGENES}${key}.png`;
+                img.onerror = () => { img.style.display = 'none'; };
+                img.onload = () => { img.style.display = 'block'; };
+                img.src = imagenesCargadas[key] || `${RUTA_IMAGENES}${key}.png`;
             }
         }
 
@@ -2458,12 +2458,10 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                 ficha.classList.remove('sin-imagen');
 
                 const imagen = document.createElement('img');
-                imagen.src = imagenesCargadas[numeroElegido] || `${numeroElegido}.png`;
                 imagen.alt = `Número ${numeroElegido}`;
-                imagen.onerror = () => {
-                    imagen.remove();
-                    ficha.classList.add('sin-imagen');
-                };
+                const alFallar = () => { imagen.remove(); ficha.classList.add('sin-imagen'); };
+                if (window.FichaImg) FichaImg.cargar(imagen, numeroElegido, ok => { if (!ok) alFallar(); });
+                else { imagen.src = imagenesCargadas[numeroElegido] || `${numeroElegido}.png`; imagen.onerror = alFallar; }
                 ficha.replaceChildren(imagen);
                 ficha.classList.add('animar');
 
@@ -3581,7 +3579,7 @@ function sha256hex(str) {
     function fichaHTML(n, i) {
         if (n === undefined) return '<div class="ficha-ui"><div class="ficha-disco vacia"><span class="ficha-n">?</span></div><span class="ficha-etq">Sin ficha</span></div>';
         return '<div class="ficha-ui"><div class="ficha-disco" style="--anillo:' + ANILLOS[i % 6] + '">' +
-            '<span class="ficha-n">' + escH(n) + '</span><img src="' + escH(srcFicha(n)) + '" alt="Ficha ' + escH(n) + '" onerror="this.remove()"></div>' +
+            '<span class="ficha-n">' + escH(n) + '</span><img data-n="' + escH(n) + '" src="' + escH(window.FichaImg ? (FichaImg.urls(n)[0] || '') : srcFicha(n)) + '" alt="Ficha ' + escH(n) + '" onerror="window.FichaImg ? FichaImg.err(this) : this.remove()"></div>' +
             '<span class="ficha-etq">' + escH(n) + '</span></div>';
     }
     const pills = (v, cl) => '<div class="pills">' + v.map(x => '<div class="pill-num ' + cl + '">' + escH(x) + '</div>').join('') + '</div>';
@@ -4973,6 +4971,62 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
     });
 })();
 </script>
+<script id="fichas-carga-js">
+/* Carga robusta de fichas: prueba varias claves/extensiones y no se rinde a la primera */
+(function () {
+    'use strict';
+    var EXT = ['png', 'webp', 'jpg', 'jpeg'];
+    function claves(n) {
+        n = String(n);
+        if (n === '0' || n === '00') return [n];                       /* 0 = Delfín y 00 = Ballena nunca se mezclan */
+        var p = /^\d$/.test(n) ? '0' + n : n, k = [n, p, String(parseInt(n, 10))];
+        return k.filter(function (x, i) { return x !== 'NaN' && k.indexOf(x) === i; });
+    }
+    function urls(n) {
+        var emb = (typeof imagenesCargadas !== 'undefined' && imagenesCargadas) || window.IMAGENES_EMBED || {}, out = [];
+        function add(u) { if (u && out.indexOf(u) < 0) out.push(u); }
+        claves(n).forEach(function (k) { add(emb[k]); add(emb[k + '.png']); });   /* 1º lo incrustado / guardado */
+        claves(n).forEach(function (k) { EXT.forEach(function (e) { add(k + '.' + e); }); }); /* 2º archivos sueltos */
+        return out;
+    }
+    function cargar(img, n, fin) {
+        var u = urls(n), i = 0;
+        if (!u.length) { if (fin) fin(false); return; }
+        img.onload = function () { img.onload = img.onerror = null; if (fin) fin(true, img.src); };
+        img.onerror = function () {
+            i++;
+            if (i < u.length) img.src = u[i]; else { img.onload = img.onerror = null; if (fin) fin(false); }
+        };
+        img.src = u[0];
+    }
+    /* para <img onerror="FichaImg.err(this)"> escritos como texto HTML */
+    function err(img) {
+        var u = urls(img.dataset.n), i = (+img.dataset.i || 0) + 1;
+        img.dataset.i = i;
+        if (i < u.length) img.src = u[i]; else { img.removeAttribute('onerror'); img.remove(); }
+    }
+    window.FichaImg = { urls: urls, cargar: cargar, err: err };
+
+    /* Reintenta las fichas que quedaron sin imagen (carga tardía, red lenta, guardadas que llegan después) */
+    function sanar() {
+        document.querySelectorAll('.ficha-disco:not(.vacia)').forEach(function (d) {
+            if (d.querySelector('img')) return;
+            var n = (d.querySelector('.ficha-n') || {}).textContent; if (!n) return;
+            var im = new Image(); im.alt = 'Ficha ' + n; im.dataset.n = n;
+            cargar(im, n, function (ok) { if (ok && !d.querySelector('img')) d.appendChild(im); });
+        });
+        document.querySelectorAll('#hoja-carta-secundaria .ficha.sin-imagen[data-numero]').forEach(function (f) {
+            var n = f.dataset.numero, im = new Image(); im.alt = 'Número ' + n;
+            cargar(im, n, function (ok) { if (ok) { f.replaceChildren(im); f.classList.remove('sin-imagen'); } });
+        });
+        if (window.rulletaFichas) window.rulletaFichas();
+    }
+    window.sanarFichas = sanar;
+    window.addEventListener('load', function () { setTimeout(sanar, 1200); setTimeout(sanar, 4500); });
+    window.addEventListener('online', sanar);
+    document.addEventListener('visibilitychange', function () { if (!document.hidden) setTimeout(sanar, 300); });
+})();
+</script>
 <style id="ruleta-css">
 .ruleta-sec { margin: 8px 0 26px; }
 .ruleta-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; gap: clamp(16px, 3vw, 40px);
@@ -4987,6 +5041,7 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
 .rul-btn:disabled { opacity: .6; cursor: progress; }
 .rul-res { margin-top: 18px; padding: 14px 18px; border-radius: 18px; background: rgba(0, 0, 0, .28); font-weight: 600; min-height: 3.2em; display: flex; align-items: center; gap: 12px; }
 .rul-res b { font-size: 1.6rem; color: #ffc933; font-variant-numeric: tabular-nums; }
+.rul-res .rul-ficha-res { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; box-shadow: 0 6px 14px rgba(0, 0, 0, .4); flex: none; }
 .rul-res .emo { font-size: 2rem; line-height: 1; }
 .ruleta-rueda { position: relative; width: 100%; max-width: 540px; justify-self: center; aspect-ratio: 1; }
 .rul-giro { width: 100%; height: 100%; will-change: transform; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .45)); }
@@ -5012,7 +5067,7 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
         var p1 = pt(r2, a1), p2 = pt(r2, a2), p3 = pt(r1, a2), p4 = pt(r1, a1);
         return 'M' + p1 + 'A' + r2 + ' ' + r2 + ' 0 0 1 ' + p2 + 'L' + p3 + 'A' + r1 + ' ' + r1 + ' 0 0 0 ' + p4 + 'Z';
     }
-    var h = '<defs><radialGradient id="rg-oro" cx=".5" cy=".5" r=".5"><stop offset=".9" stop-color="#f7d675"/><stop offset="1" stop-color="#b9801a"/></radialGradient>' +
+    var h = '<defs><clipPath id="rg-clip" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath><radialGradient id="rg-oro" cx=".5" cy=".5" r=".5"><stop offset=".9" stop-color="#f7d675"/><stop offset="1" stop-color="#b9801a"/></radialGradient>' +
         '<radialGradient id="rg-som" cx=".5" cy=".5" r=".5"><stop offset=".6" stop-color="#000" stop-opacity=".45"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient><radialGradient id="rg-cen" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#2fae5a"/><stop offset="1" stop-color="#0d5a2c"/></radialGradient></defs>';
     h += '<circle cx="300" cy="300" r="298" fill="url(#rg-oro)"/><circle cx="300" cy="300" r="286" fill="#8a5a10"/>';
     ORDEN.forEach(function (n, i) {
@@ -5021,8 +5076,9 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
         h += '<path d="' + sector(200, 286, a1, a2) + '" fill="' + col + '" stroke="#e9c768" stroke-width=".9"/>';
         h += '<path d="' + sector(124, 200, a1, a2) + '" fill="' + col + '" stroke="rgba(0,0,0,.35)" stroke-width="1"/>';
         var g = 'transform="rotate(' + a + ' 300 300)" text-anchor="middle"';
-        h += '<g ' + g + '><circle cx="300" cy="' + (300 - 262) + '" r="15.5" fill="#fbf0cf" stroke="#e9c768" stroke-width="1.5"/>' +
-             '<text x="300" y="' + (300 - 262 + 6.5) + '" font-size="19">' + A[n][1] + '</text>' +
+        h += '<g ' + g + '><circle cx="300" cy="' + (300 - 259) + '" r="20" fill="#fbf0cf" stroke="#e9c768" stroke-width="1.5"/>' +
+             '<text class="rul-emo" x="300" y="' + (300 - 259 + 7) + '" font-size="21">' + A[n][1] + '</text>' +
+             '<image class="rul-ficha" data-n="' + n + '" x="280.5" y="' + (300 - 259 - 19.5) + '" width="39" height="39" clip-path="url(#rg-clip)" visibility="hidden"/>' +
              '<text x="300" y="' + (300 - 219 + 7) + '" font-size="' + (cero ? 15 : 20) + '" font-weight="800" fill="#fff" font-family="Inter,sans-serif">' + n + '</text></g>';
     });
     h += '<circle cx="300" cy="300" r="200" fill="url(#rg-som)"/><circle cx="300" cy="300" r="200" fill="none" stroke="#e9c768" stroke-width="2.5"/>';
@@ -5035,6 +5091,21 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
         ? '<image href="' + logo.src + '" x="215" y="225" width="170" height="150" preserveAspectRatio="xMidYMid meet"/>'
         : '<text x="300" y="312" text-anchor="middle" font-size="30" font-weight="800" fill="#ffc933">DATOS FIJOS</text>';
     svg.innerHTML = h;
+    var ficha = {};                                   /* número -> src de la ficha ya cargada */
+    function ponerFichas() {
+        if (!window.FichaImg) return;
+        svg.querySelectorAll('image.rul-ficha').forEach(function (el) {
+            var n = el.dataset.n; if (ficha[n]) return;
+            var im = new Image();
+            FichaImg.cargar(im, n, function (ok, src) {
+                if (!ok || ficha[n]) return;
+                ficha[n] = src; el.setAttribute('href', src); el.setAttribute('visibility', 'visible');
+                var e = el.previousElementSibling; if (e) e.setAttribute('visibility', 'hidden');
+            });
+        });
+    }
+    window.rulletaFichas = ponerFichas;
+    ponerFichas();
 
     /* giro */
     var btn = document.getElementById('rul-girar'), res = document.getElementById('rul-res');
@@ -5052,12 +5123,12 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
         girando = true; btn.disabled = true; cancelAnimationFrame(raf);
         var k = Math.floor(Math.random() * N), ms = quieto() ? 600 : 5200;
         var base = ((ang % 360) + 360) % 360, falta = (((-k * P - base) % 360) + 360) % 360;
-        res.textContent = 'Girando…';
+        res.textContent = 'Girando…'; ponerFichas();
         giro.style.transition = 'transform ' + ms + 'ms cubic-bezier(.12,.7,.1,1)';
         ang = ang + (quieto() ? 0 : 1800) + falta; pinta();
         setTimeout(function () {
             var n = ORDEN[k];
-            res.innerHTML = '<span class="emo">' + A[n][1] + '</span><span>Tu animalito: <b>' + n + '</b> · ' + A[n][0] + '</span>';
+            res.innerHTML = (ficha[n] ? '<img class="rul-ficha-res" src="' + ficha[n] + '" alt="">' : '<span class="emo">' + A[n][1] + '</span>') + '<span>Tu animalito: <b>' + n + '</b> · ' + A[n][0] + '</span>';
             giro.style.transition = ''; girando = false; btn.disabled = false; t0 = 0;
             if (!quieto()) raf = requestAnimationFrame(ocioso);
         }, ms + 80);
