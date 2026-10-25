@@ -966,7 +966,7 @@
         .hoja-blanca, .hoja-carta-secundaria, .reporte-wrap { border-radius: clamp(14px, calc(var(--cq1, 1cqw) * 5), 30px); box-shadow: 0 14px 30px rgba(90, 40, 0, .3); }
         .reporte-wrap { overflow: hidden; }
         .hoja-reporte { border-radius: 0; box-shadow: none; }
-        .capturing .hoja-blanca, .capturing .hoja-carta-secundaria { border-radius: 0 !important; box-shadow: none !important; }
+        /* (la imagen exportada ya sale sin bordes ni sombra por las opciones de captura; la hoja visible conserva sus bordes) */
 
         /* ========== TABLET ========== */
 
@@ -2322,12 +2322,17 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             }
         }
 
-        function mostrarAnimal(indexDia, numero) {
+        function mostrarAnimal(indexDia, numero, intento) {
             const img = document.getElementById(`animal-${indexDia}`);
-            const key = String(numero);
+            if (!img) return;
+            const key = String(numero), n = intento || 0;
             img.dataset.num = key; img.decoding = 'async';
             if (window.FichaImg) {
-                FichaImg.cargar(img, key, ok => { img.style.display = ok ? 'block' : 'none'; });
+                FichaImg.cargar(img, key, ok => {
+                    img.style.display = ok ? 'block' : 'none';
+                    /* si no cargó (red lenta, imágenes que llegan tarde) reintenta en vez de quitar la ficha para siempre */
+                    if (!ok && n < 4) setTimeout(() => { if (img.dataset.num === key) mostrarAnimal(indexDia, numero, n + 1); }, 1200 * (n + 1));
+                });
             } else {
                 img.onerror = () => { img.style.display = 'none'; };
                 img.onload = () => { img.style.display = 'block'; };
@@ -2692,6 +2697,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                 const previa = CACHE_IMG[clave];
                 if (previa && previa.sig === sig) return previa;
 
+                if (clave === 'h1') { refrescarImagenesHojas(); await esperar(120); }   // que no falte ninguna ficha de animalito
                 await asegurarLibs();
                 if (!window.htmlToImage) throw new Error('Librería html-to-image no cargada (revisa tu conexión)');
                 await document.fonts.ready;
@@ -2723,7 +2729,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                             opciones.style = Object.assign({}, opciones.style, { height: altoCss + 'px' });
                         }
                         try {
-                            if (!_calentado) { await htmlToImage.toBlob(hoja, opciones); _calentado = true; } // precarga (Safari)
+                            if (!_calentado) { _calentado = true; if (/^((?!chrome|android|crios|edg).)*safari/i.test(navigator.userAgent)) await htmlToImage.toBlob(hoja, opciones); } // precarga solo en Safari
                             const blob = await htmlToImage.toBlob(hoja, opciones);
                             if (!blob || blob.size < 2000) throw new Error('imagen vacía');
                             if (previa && previa.url) URL.revokeObjectURL(previa.url);
@@ -2776,7 +2782,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         // Pre-renderiza las 3 hojas en segundo plano para que la descarga sea inmediata
         let _preparando = false, _timerPrep = null;
         async function prepararImagenes() {
-            if (_preparando || descargandoTodas || UI.vista !== 'descargas') return;
+            if (_preparando || descargandoTodas || UI.vista !== 'descargas' || document.hidden) return;
             if (performance.now() - (window.__tScroll || 0) < 700) { programarPreparar(900); return; }   // espera a que termine el scroll
             const hoja2 = document.getElementById('hoja-carta-secundaria');
             if (!hoja2 || !hoja2.querySelector('.ficha[data-numero]')) return;
@@ -2790,8 +2796,8 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         function programarPreparar(ms) {
             clearTimeout(_timerPrep);
             _timerPrep = setTimeout(() => {
-                (window.requestIdleCallback || (f => f()))(() => prepararImagenes());
-            }, ms || 1500);
+                (window.requestIdleCallback || (f => f()))(() => prepararImagenes(), { timeout: 5000 });
+            }, Math.max(ms || 1500, 3000));   // las hojas se ven primero; la preparación espera a que todo se asiente
         }
         window.programarPreparar = programarPreparar;
         window.renderGaleria = renderGaleria;
@@ -5438,6 +5444,20 @@ html[data-tema="oscuro"] .inst-caja { background: #1c1c21; color: #f3f3f6; }
         var m = /[?&]vista=(inicio|resultados|fichas|descargas)/.exec(location.search);
         if (m && window.irAVista) setTimeout(function () { irAVista(m[1], { scroll: false }); }, 400);
     });
+})();
+</script>
+<script id="predecodificar-fondos">
+(function () {
+    'use strict';
+    /* Los fondos de las 3 hojas pesan casi 1 MB cada uno y se decodificaban al abrir Descargas (por eso tardaban).
+       Se decodifican antes, en reposo, para que las 3 aparezcan a la vez y al instante. */
+    function listo() {
+        var st = document.getElementById('fondos-hojas'); if (!st) return;
+        var urls = (st.textContent.match(/url\(\s*(data:image\/[^)]+)\)/g) || []).map(function (u) { return u.replace(/^url\(\s*/, '').replace(/\)$/, ''); });
+        window.__fondosHojas = urls.map(function (u) { var im = new Image(); im.decoding = 'async'; im.src = u; return im.decode ? im.decode().catch(function () {}) : null; });
+    }
+    function arranca() { (window.requestIdleCallback || function (f) { setTimeout(f, 300); })(listo, { timeout: 2500 }); }
+    if (document.readyState === 'complete') arranca(); else window.addEventListener('load', arranca);
 })();
 </script>
 </body>
