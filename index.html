@@ -8,7 +8,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <script id="siempre-fresca">
-    /* Siempre en tiempo real: sin service worker, sin cachés guardadas y recarga si hay versión nueva. */
+    /* Siempre en tiempo real: el único service worker (sw.js, solo para poder instalar la app) no guarda nada; sin cachés y recarga si hay versión nueva. */
     (function () {
         var V = String(Date.now()); window.__V = V;
         if (location.protocol === 'file:') return;
@@ -19,7 +19,7 @@
         /* 1) Elimina cualquier service worker y cachés que dejaron versiones anteriores */
         (async function () {
             var hubo = false;
-            try { if ('serviceWorker' in navigator) { var rs = await navigator.serviceWorker.getRegistrations(); for (var i = 0; i < rs.length; i++) { hubo = true; await rs[i].unregister(); } } } catch (e) {}
+            try { if ('serviceWorker' in navigator) { var rs = await navigator.serviceWorker.getRegistrations(); for (var i = 0; i < rs.length; i++) { var sw0 = rs[i].active || rs[i].waiting || rs[i].installing; if (sw0 && /\/sw\.js(\?|$)/.test(sw0.scriptURL)) continue; hubo = true; await rs[i].unregister(); } } } catch (e) {}
             try { if (window.caches) { var ks = await caches.keys(); for (var j = 0; j < ks.length; j++) { hubo = true; await caches.delete(ks[j]); } } } catch (e) {}
             if (hubo && guardia('df_limpio', 60000)) location.reload();
         })();
@@ -43,13 +43,24 @@
         document.addEventListener('visibilitychange', function () { if (!document.hidden) revisar(); });
     })();
     </script>
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
         <meta name="description" content="Datos fijos de la semana, fichas de animalitos, triples, ñapa y sorteos diarios. Comercializadora Rondón: juega inteligente.">
     <meta property="og:type" content="website">
     <meta property="og:title" content="Datos Fijos | Comercializadora Rondón">
     <meta property="og:description" content="Datos diarios de Animalitos, Triples y mucho más. Consulta resultados, genera tus fichas y descarga las hojas de la semana.">
-    <meta property="og:image" content="icon-192.png">
-    <meta name="twitter:card" content="summary">
+    <meta property="og:site_name" content="Datos Fijos · Comercializadora Rondón">
+    <meta property="og:locale" content="es_VE">
+    <meta property="og:url" content="https://rordaz2023.github.io/scalia.2.0/">
+    <meta property="og:image" content="https://rordaz2023.github.io/scalia.2.0/og-image.jpg">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Logo de Datos Fijos con el león de Comercializadora Rondón">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Datos Fijos | Comercializadora Rondón">
+    <meta name="twitter:description" content="Datos diarios de Animalitos, Triples y mucho más. Juega inteligente.">
+    <meta name="twitter:image" content="https://rordaz2023.github.io/scalia.2.0/og-image.jpg">
+    <meta name="application-name" content="Datos Fijos">
     <meta name="theme-color" id="meta-tema" content="#fff8ee">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="color-scheme" content="light dark">
@@ -1761,6 +1772,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             <button data-vista="descargas" onclick="irAVista('descargas')"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg>Descargas</button>
         </nav>
         <button class="btn-rojo" id="btn-generar-fichas" onclick="generarFichasClick()"><svg class="ico " aria-hidden="true"><use href="#i-bolt"/></svg>Generar fichas</button>
+        <button class="btn-tema btn-instalar" id="btn-instalar" type="button" hidden aria-label="Instalar la app de Datos Fijos" title="Instalar app"><svg class="ico" aria-hidden="true"><use href="#i-down"/></svg></button>
         <button class="btn-tema btn-pata" id="btn-pata" type="button" aria-haspopup="dialog" aria-label="Ver pirámides y fichas de la semana" title="Pirámides y fichas"><svg class="ico" aria-hidden="true"><use href="#i-paw"/></svg></button>
         <button class="btn-tema btn-poster" id="btn-poster" type="button" aria-haspopup="dialog" aria-label="Crear póster publicitario" title="Crear póster"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11"/></svg></button>
         <button class="btn-tema" id="btn-tema" type="button" onclick="Tema.ciclar()" aria-label="Tema automático. Toca para cambiar." title="Tema automático. Toca para cambiar.">
@@ -1775,6 +1787,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
     <div class="menu-movil" id="menu-movil">
         <button class="btn-rojo" onclick="generarFichasClick(); cerrarMenu();"><svg class="ico " aria-hidden="true"><use href="#i-bolt"/></svg>Generar fichas</button>
         <button class="btn-borde" onclick="irAVista('descargas'); cerrarMenu();"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg>Ir a descargas</button>
+        <button class="btn-borde" id="btn-instalar-m" type="button" hidden onclick="cerrarMenu();"><svg class="ico " aria-hidden="true"><use href="#i-down"/></svg>Instalar app</button>
     </div>
 
     <div class="barra-semana">
@@ -1805,8 +1818,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             </nav>
             <div class="fx-centro">
                 <h2 class="fx-titulo" aria-label="Datos Fijos">
-                    <span class="fx-w fx-izq" aria-hidden="true"><span class="fx-in">DATOS</span></span>
-                    <span class="fx-w fx-der" aria-hidden="true"><span class="fx-in">FIJOS</span></span>
+                    <img class="fx-logo" id="fx-logo" alt="" aria-hidden="true" decoding="async">
                 </h2>
                 <div class="fx-marco" aria-hidden="true"></div>
                 <div class="fx-leon"><img id="fx-img" alt="Leoncito mascota de Comercializadora Rondón" decoding="async"></div>
@@ -2313,6 +2325,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         function mostrarAnimal(indexDia, numero) {
             const img = document.getElementById(`animal-${indexDia}`);
             const key = String(numero);
+            img.dataset.num = key; img.decoding = 'async';
             if (window.FichaImg) {
                 FichaImg.cargar(img, key, ok => { img.style.display = ok ? 'block' : 'none'; });
             } else {
@@ -2514,10 +2527,11 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                 const alFallar = () => { imagen.remove(); ficha.classList.add('sin-imagen'); };
                 if (window.FichaImg) FichaImg.cargar(imagen, numeroElegido, ok => { if (!ok) alFallar(); });
                 else { imagen.src = imagenesCargadas[numeroElegido] || `${numeroElegido}.png`; imagen.onerror = alFallar; }
+                imagen.decoding = 'async';
                 ficha.replaceChildren(imagen);
                 ficha.classList.add('animar');
 
-                if (!rapido) await new Promise(resolve => setTimeout(resolve, 80));
+                if (!rapido) await new Promise(resolve => setTimeout(resolve, 20));
             }
         }
 
@@ -2763,6 +2777,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         let _preparando = false, _timerPrep = null;
         async function prepararImagenes() {
             if (_preparando || descargandoTodas || UI.vista !== 'descargas') return;
+            if (performance.now() - (window.__tScroll || 0) < 700) { programarPreparar(900); return; }   // espera a que termine el scroll
             const hoja2 = document.getElementById('hoja-carta-secundaria');
             if (!hoja2 || !hoja2.querySelector('.ficha[data-numero]')) return;
             _preparando = true;
@@ -2846,17 +2861,31 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
 
         document.addEventListener('DOMContentLoaded', async () => {
             crearEstructuraDias();
-            await cargarGuardadas();
+            // Las imágenes guardadas se leen en segundo plano: ya no retrasan a las hojas 1 y 2
+            const guardadas = cargarGuardadas();
+            // Hoja 1 · Hoja 2 · Hoja 3: se dibujan juntas, en el mismo instante
             cambiarPeriodo('hoy');
-            // Crear el tablero de la segunda hoja
-            crearTableroSecundario();
-            // Tercera hoja: escalar y generar números iniciales
             escalarReporte();
             generarReporte();
-            // Segunda hoja: generar las fichas automáticamente al iniciar (sin esperar al botón)
             generandoFichas = true;
             try { await generarTableroSecundario(true); } catch (e) { console.warn(e); } finally { generandoFichas = false; }
+            // Cuando llegan las imágenes guardadas, completa las que hayan quedado vacías
+            guardadas.then(refrescarImagenesHojas);
         });
+
+        function refrescarImagenesHojas() {
+            try {
+                document.querySelectorAll('#days-container img[id^="animal-"][data-num]').forEach(im => {
+                    if (im.complete && im.naturalWidth) return;
+                    mostrarAnimal(Number(im.id.replace('animal-', '')), im.dataset.num);
+                });
+                document.querySelectorAll('#hoja-carta-secundaria .ficha.sin-imagen[data-numero]').forEach(f => {
+                    const n = f.dataset.numero, imagen = document.createElement('img');
+                    imagen.alt = `Número ${n}`; imagen.decoding = 'async';
+                    FichaImg.cargar(imagen, n, ok => { if (ok) { f.classList.remove('sin-imagen'); f.replaceChildren(imagen); } });
+                });
+            } catch (e) { console.warn(e); }
+        }
     </script>
 
 <style>
@@ -5229,6 +5258,16 @@ html[data-tema="oscuro"] .fx-leon img { filter: drop-shadow(0 22px 28px rgba(0, 
     .fx-marco { width: calc(var(--fs) * 1.7); height: calc(var(--fs) * 1.6); }
     .fx-izq { transform: translateX(calc(var(--p) * -14vw)); } .fx-der { transform: translateX(calc(var(--p) * 14vw)); }
 }
+/* Logo oficial de Datos Fijos detrás del león (reemplaza las letras gigantes) */
+.fx-logo { display: block; width: min(88%, calc(var(--fs) * 4.6)); height: auto; max-width: none; position: relative; z-index: 1;
+    transform: translateY(calc(var(--p) * -28px)) scale(calc(1 + var(--p) * .08)); will-change: transform;
+    filter: drop-shadow(0 14px 18px rgba(0, 0, 0, .22)); }
+html[data-tema="oscuro"] .fx-logo { filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .6)); }
+.leon-fx:not(.dentro):not(.fx-quieto) .fx-logo { opacity: 0; }
+.leon-fx.dentro .fx-logo { animation: fxPalabra .9s cubic-bezier(.2, .8, .2, 1) backwards; }
+.fx-quieto .fx-logo { transform: none; }
+.fx-marco { display: none; }
+@media (max-width: 760px) { .fx-logo { width: 100%; margin-top: -14vw; } }
 @media print { .leon-fx { display: none; } }
 </style>
 <script id="leon-fx-js">
@@ -5237,6 +5276,8 @@ html[data-tema="oscuro"] .fx-leon img { filter: drop-shadow(0 22px 28px rgba(0, 
     var sec = document.getElementById('leon-fx'), img = document.getElementById('fx-img');
     if (!sec || !img) return;
     var centro = sec.querySelector('.fx-centro'), leon = sec.querySelector('.fx-leon');
+    var lg = document.getElementById('fx-logo'), hl = document.querySelector('img.logo-df');
+    if (lg && hl && hl.src) lg.src = hl.src;
     var origen = document.querySelector('.hero-leon .mascota');
     if (origen && origen.src) img.src = origen.src; else { leon.style.display = 'none'; return; }
     var quieto = !!(window.reducirMovimiento && window.reducirMovimiento());
@@ -5275,15 +5316,24 @@ html[data-tema="oscuro"] .fx-leon img { filter: drop-shadow(0 22px 28px rgba(0, 
         var W = window.innerWidth, H = window.innerHeight;
         var c = centro.getBoundingClientRect(), ax = c.left + c.width / 2, ay = c.top + c.height / 2;
         var q = suave(clamp(-r.top / (r.height * .75)));                              /* 0 = en el bloque · 1 = viaja libre */
-        var max = Math.max(1, document.documentElement.scrollHeight - H);
-        var t = clamp((window.scrollY || 0) / max), th = t * Math.PI * 6;             /* 3 idas y vueltas por la página */
-        var esc = .5, w = lw * esc;
+        var esc = .5, w = lw * esc, hh = lh * esc, sy = window.scrollY || 0;
+        var rul = document.querySelector('#ruleta .ruleta-card'), rr = rul ? rul.getBoundingClientRect() : null;
+        var hayRul = !!(rr && rr.height);
+        var meta = hayRul ? Math.max(1, sy + rr.bottom - H * .8) : Math.max(1, document.documentElement.scrollHeight - H);
+        var t = clamp(sy / meta), th = t * Math.PI * 4;                               /* idas y vueltas mientras baja hacia la ruleta */
         var x0 = W / 2 + (W / 2 - w * .42) * Math.tanh(2.2 * Math.sin(th));           /* se pega a un borde y cruza al otro */
         var y0 = H * .62 + Math.cos(th) * H * .06 + Math.sin(t * 70) * 9;
-        var rot0 = 10 * Math.sin(th * 2), s0 = esc;
-        var fin = suave(clamp((t - .93) / .07));                                      /* al llegar al final, se queda abajo al centro */
-        x0 = lerp(x0, W / 2, fin); y0 = lerp(y0, H - lh * .6 * .5 - 96, fin); rot0 *= 1 - fin; s0 = lerp(esc, .6, fin);
-        var x = lerp(ax, x0, q), y = lerp(ay, y0, q), s = lerp(1, s0, q), rot = lerp(0, rot0, q);
+        var rot0 = 10 * Math.sin(th * 2);
+        var x = lerp(ax, x0, q), y = lerp(ay, y0, q), s = lerp(1, esc, q), rot = lerp(0, rot0, q);
+        if (hayRul) {
+            /* tope: la esquina inferior izquierda de la ruleta. Al llegar se queda quieto ahí, anclado a la ruleta */
+            var gx = rr.left + w * .42 - 4, gy = rr.bottom - hh * .5 + 12;
+            if (y >= gy || t >= 1) { x = gx; y = gy; rot = 0; s = esc; }
+            else {
+                var k = suave(clamp(1 - (gy - y) / (H * .5)));
+                x = lerp(x, gx, k); rot = lerp(rot, 0, k);
+            }
+        }
         leon.style.visibility = 'visible';
         leon.style.transform = 'translate3d(' + (x - lw / 2).toFixed(1) + 'px,' + (y - lh / 2).toFixed(1) + 'px,0) rotate(' + rot.toFixed(2) + 'deg) scale(' + s.toFixed(3) + ')';
     }
@@ -5314,5 +5364,81 @@ html[data-tema="oscuro"] .fx-leon img { filter: drop-shadow(0 22px 28px rgba(0, 
 html.intro .fx-leon.viaja { opacity: 0; }
 @media print { .fx-leon.viaja { display: none; } }
 </style>
+<style id="rendimiento-css">
+/* ===== Rendimiento y scroll suave ===== */
+html { scroll-behavior: smooth; -webkit-tap-highlight-color: transparent; text-rendering: optimizeSpeed; }
+body { -webkit-font-smoothing: antialiased; }
+/* lo que está fuera de pantalla no se dibuja hasta que se acerca (menos trabajo al hacer scroll) */
+.grid-inicio > .tarjeta, #vista-inicio .franja { content-visibility: auto; contain-intrinsic-size: auto 520px; }
+/* capas propias para lo que siempre está fijo: el scroll no las repinta */
+.top, .tabbar, .arriba { transform: translateZ(0); backface-visibility: hidden; }
+/* en pantallas táctiles el desenfoque es más ligero (es lo que más cuesta al desplazar) */
+@media (hover: none) and (pointer: coarse) {
+    .tarjeta, .barra-semana, .btn-borde, .toast, .llamanos { -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+    .top { -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+}
+/* animaciones infinitas solo cuando se ven */
+.fichas-grid .ficha-ui { animation-play-state: running; }
+@media (prefers-reduced-motion: reduce) { html:not([data-anim="forzar"]) { scroll-behavior: auto; } }
+</style>
+<script id="rendimiento-js">
+(function () {
+    'use strict';
+    window.__tScroll = 0;
+    window.addEventListener('scroll', function () { window.__tScroll = performance.now(); }, { passive: true });
+    ['touchstart', 'touchmove', 'wheel'].forEach(function (ev) { window.addEventListener(ev, function () {}, { passive: true }); });
+})();
+</script>
+<style id="instalar-css">
+.btn-instalar[hidden], #btn-instalar-m[hidden] { display: none !important; }
+@media (max-width: 900px) { .btn-instalar { display: none !important; } }
+.inst-fondo { position: fixed; inset: 0; z-index: 1200; display: flex; align-items: flex-end; justify-content: center; padding: 16px; background: rgba(20, 8, 8, .6); }
+.inst-caja { width: min(440px, 100%); background: #fff; color: #1d1d22; border-radius: 26px; padding: 22px 20px 18px; text-align: center; box-shadow: 0 20px 50px rgba(0, 0, 0, .4); }
+html[data-tema="oscuro"] .inst-caja { background: #1c1c21; color: #f3f3f6; }
+.inst-caja img { width: 76px; height: 76px; border-radius: 18px; box-shadow: 0 6px 16px rgba(0, 0, 0, .3); }
+.inst-caja h3 { margin: 12px 0 6px; font-size: 1.25rem; }
+.inst-caja ol { text-align: left; margin: 12px 0 16px 1.2em; line-height: 1.55; }
+.inst-caja button { border: 0; border-radius: 999px; padding: 12px 28px; font: 700 1rem inherit; background: #d3141b; color: #fff; }
+</style>
+<script id="instalar-js">
+(function () {
+    'use strict';
+    var ev = null, btns = [document.getElementById('btn-instalar'), document.getElementById('btn-instalar-m')];
+    var ya = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+    var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    function mostrar(v) { btns.forEach(function (b) { if (b) b.hidden = !v; }); }
+
+    /* Registro del service worker (necesario para poder instalar; no guarda nada en caché) */
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+        window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function () {}); });
+    }
+
+    function guiaIOS() {
+        var f = document.createElement('div'); f.className = 'inst-fondo'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-modal', 'true');
+        f.innerHTML = '<div class="inst-caja"><img src="apple-touch-icon.png" alt=""><h3>Instala Datos Fijos</h3>' +
+            '<ol><li>Toca el botón <b>Compartir</b> (el cuadrado con la flecha) de Safari.</li>' +
+            '<li>Elige <b>Añadir a pantalla de inicio</b>.</li><li>Toca <b>Añadir</b>. ¡Listo!</li></ol><button type="button">Entendido</button></div>';
+        f.addEventListener('click', function (e) { if (e.target === f || e.target.tagName === 'BUTTON') f.remove(); });
+        document.body.appendChild(f);
+    }
+    function instalar() {
+        if (ev) {
+            ev.prompt();
+            ev.userChoice.then(function (r) { if (r && r.outcome === 'accepted') mostrar(false); ev = null; }).catch(function () {});
+        } else if (ios) guiaIOS();
+    }
+    btns.forEach(function (b) { if (b) b.addEventListener('click', instalar); });
+
+    window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); ev = e; if (!ya) mostrar(true); });
+    window.addEventListener('appinstalled', function () { ev = null; mostrar(false); if (window.toast) window.toast('¡App instalada!'); });
+    if (ios && !ya) mostrar(true);
+
+    /* Accesos directos de la app (?vista=resultados | fichas | descargas) */
+    document.addEventListener('DOMContentLoaded', function () {
+        var m = /[?&]vista=(inicio|resultados|fichas|descargas)/.exec(location.search);
+        if (m && window.irAVista) setTimeout(function () { irAVista(m[1], { scroll: false }); }, 400);
+    });
+})();
+</script>
 </body>
 </html>
