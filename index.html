@@ -2681,7 +2681,49 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         function firmaHoja(el) {
             const t = el.innerHTML; let h = 5381;
             for (let i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0;
-            return t.length + ':' + h;
+            // cuenta las imágenes (animalitos/fichas) ya cargadas: una captura hecha antes de que lleguen no se reutiliza
+            const okImgs = Array.from(el.querySelectorAll('img')).filter(i => i.complete && i.naturalWidth && i.style.display !== 'none').length;
+            return t.length + ':' + h + ':' + okImgs;
+        }
+
+        // Espera a que todas las imágenes de la hoja carguen y las incrusta como data-URI,
+        // para que la captura (PC o móvil) no dependa de volver a descargarlas. Devuelve una función que restaura todo.
+        async function incrustarImagenes(hoja) {
+            const cambios = [];
+            const imgs = Array.from(hoja.querySelectorAll('img'));
+            await Promise.all(imgs.map(async im => {
+                try {
+                    if (!im.getAttribute('src')) return;
+                    if (!(im.complete && im.naturalWidth)) {
+                        await new Promise(r => {
+                            const t = setTimeout(r, 5000);
+                            const fin = () => { clearTimeout(t); r(); };
+                            im.addEventListener('load', fin, { once: true });
+                            im.addEventListener('error', fin, { once: true });
+                        });
+                    }
+                    if (!im.naturalWidth) return;
+                    if (im.classList.contains('animal-badge') && im.style.display === 'none') im.style.display = 'block';
+                    const src = im.currentSrc || im.src;
+                    if (/^data:/i.test(src)) { try { await im.decode(); } catch (e) {} return; }
+                    let data = null;
+                    try { data = await blobToDataURL(await (await fetch(src)).blob()); } catch (e) {}
+                    if (!data) {
+                        try {
+                            const c = document.createElement('canvas');
+                            c.width = im.naturalWidth; c.height = im.naturalHeight;
+                            c.getContext('2d').drawImage(im, 0, 0);
+                            data = c.toDataURL('image/png');
+                        } catch (e) {}
+                    }
+                    if (data) {
+                        cambios.push([im, im.getAttribute('src')]);
+                        im.src = data;
+                        try { await im.decode(); } catch (e) {}
+                    }
+                } catch (e) { console.warn('No se pudo incrustar una imagen', e); }
+            }));
+            return () => cambios.forEach(([im, orig]) => { if (orig != null) im.setAttribute('src', orig); });
         }
 
         function enCola(fn) {
@@ -2697,13 +2739,14 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                 const previa = CACHE_IMG[clave];
                 if (previa && previa.sig === sig) return previa;
 
-                if (clave === 'h1') { refrescarImagenesHojas(); await esperar(120); }   // que no falte ninguna ficha de animalito
+                if (clave === 'h1') { refrescarImagenesHojas(); await esperar(250); refrescarImagenesHojas(); }   // que no falte ninguna ficha de animalito
                 await asegurarLibs();
                 if (!window.htmlToImage) throw new Error('Librería html-to-image no cargada (revisa tu conexión)');
                 await document.fonts.ready;
                 await Promise.all(Array.from(hoja.querySelectorAll('img')).map(im =>
                     (im.src && !im.complete) ? new Promise(r => { im.onload = im.onerror = r; }) : Promise.resolve()));
 
+                const restaurarImgs = await incrustarImagenes(hoja);
                 _capturasActivas++;
                 document.body.classList.add('capturing');
                 try {
@@ -2729,7 +2772,11 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                             opciones.style = Object.assign({}, opciones.style, { height: altoCss + 'px' });
                         }
                         try {
-                            if (!_calentado) { _calentado = true; if (/^((?!chrome|android|crios|edg).)*safari/i.test(navigator.userAgent)) await htmlToImage.toBlob(hoja, opciones); } // precarga solo en Safari
+                            if (!_calentado) {   // precarga en TODOS los navegadores (Chrome/Edge/Firefox de PC también pierden imágenes en la 1ª captura)
+                                _calentado = true;
+                                const esSafari = /^((?!chrome|android|crios|edg).)*safari/i.test(navigator.userAgent);
+                                try { await htmlToImage.toBlob(hoja, esSafari ? opciones : Object.assign({}, opciones, { pixelRatio: 0.3 })); } catch (e) {}
+                            }
                             const blob = await htmlToImage.toBlob(hoja, opciones);
                             if (!blob || blob.size < 2000) throw new Error('imagen vacía');
                             if (previa && previa.url) URL.revokeObjectURL(previa.url);
@@ -2742,6 +2789,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                     }
                     throw ultimoError;
                 } finally {
+                    try { restaurarImgs(); } catch (e) {}
                     if (--_capturasActivas <= 0) { _capturasActivas = 0; document.body.classList.remove('capturing'); }
                 }
             });
