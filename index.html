@@ -3073,9 +3073,10 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             <div class="pago-fila"><b style="text-align:left">rordaz2023@gmail.com</b><button type="button" class="pago-copiar" data-copiar="rordaz2023@gmail.com">Copiar</button></div>
         </div>
 
-        <p class="pago-nota">Cuando se verifique tu pago, recibirás un PIN de 4 dígitos para descargar las 3 hojas.</p>
+        <p class="pago-nota">Cuando se verifique tu pago, recibirás un PIN de 4 dígitos para descargar las 3 hojas. Si cierras la página, te lo podemos enviar a tu teléfono.</p>
         <div id="sol-form">
             <input class="adm-campo" type="text" id="sol-nombre" maxlength="40" autocomplete="name" placeholder="Tu nombre">
+            <input class="adm-campo" type="tel" id="sol-tel" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="Tu teléfono (para recibir tu PIN)">
             <input class="adm-campo" type="text" id="sol-ref" maxlength="12" inputmode="numeric" autocomplete="off" placeholder="Referencia del pago (últimos dígitos)">
             <button type="button" class="pago-ws" id="sol-enviar" style="margin-top:12px" onclick="enviarSolicitud()">Ya pagué: solicitar verificación</button>
         </div>
@@ -3083,52 +3084,18 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         <button type="button" class="pago-copiar" style="display:block;margin:0 auto 14px" onclick="avisarPagoWhatsApp()">Enviar comprobante por WhatsApp (opcional)</button>
 
         <p class="pago-label">¿Ya te aprobaron el pago? Ingresa tu PIN</p>
+        <input class="adm-campo" type="tel" id="pago-tel" inputmode="tel" autocomplete="tel" placeholder="Tu teléfono (el de tu solicitud)" style="display:none;margin:0 0 10px">
         <div class="pago-codigo">
-            <input type="text" id="pago-input" placeholder="PIN de 4 dígitos" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')validarCodigoPago()">
+            <input type="text" id="pago-input" placeholder="PIN de 4 dígitos" maxlength="4" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')validarCodigoPago()">
             <button type="button" class="btn-rojo" onclick="validarCodigoPago()">Descargar</button>
         </div>
         <div class="pago-error" id="pago-error" role="alert"></div>
     </div>
 </div>
 
-<div class="pago-overlay" id="admin-overlay" role="dialog" aria-modal="true" aria-labelledby="admin-titulo" onclick="if(event.target===this)cerrarAdmin()">
-    <div class="pago-card">
-        <button class="pago-cerrar" type="button" onclick="cerrarAdmin()" aria-label="Cerrar"><svg class="ico" aria-hidden="true"><use href="#i-x"/></svg></button>
-        <h2 class="pago-titulo" id="admin-titulo">Panel de códigos</h2>
-        <p class="pago-sub">Solo para el administrador.</p>
-        <div class="pago-codigo" style="margin-bottom:10px">
-            <input type="password" id="admin-clave" placeholder="Clave de administrador" autocomplete="off" onkeydown="if(event.key==='Enter')adminGenerar()">
-        </div>
-        <div class="pago-codigo">
-            <button type="button" class="btn-rojo" style="flex:1" onclick="adminGenerar()">Generar código nuevo</button>
-            <button type="button" class="btn-borde" style="padding:10px 16px;font-size:.9rem" onclick="adminListar()">Ver estado</button>
-        </div>
-        <div class="pago-error" id="admin-msg" role="alert"></div>
-        <div class="adm-lista" id="admin-lista"></div>
-    </div>
-</div>
-
 <script>
-    // ===== Códigos de un solo uso (uno por cada descarga de las 3 hojas) =====
-    // Aquí solo se guardan las huellas (hash) de los códigos, no los códigos.
-    // Los códigos reales están en codigos_descarga.csv, que solo tú tienes.
+    // Sal para la huella (hash) del usuario y clave del administrador
     const SAL_CODIGOS = 'datosfijos-rondon-v1:';
-    const CODIGOS_VALIDOS = new Set(["4e8f5c666b85b9c96af6d6f0e98b7450c531269b9b16da8982725f658b596caf", "4bae298f1d4c58605ba3bed72df8652eb4d7934525f3b2d087b83171f0b93ee0", "820955036e0988e68de6a6bd206b516373dbacb6286d306554b87374e2c5ee05", "67656ef10e27cb297beb28d3d87e2716e782f2bece3df68c91d44f2fda26ec9e", "125bd463da7e23898e233af20c03001b54f0de88d9b797706edfb7c6fd898ab2", "7ed8f13562e8d6558b28424a520d9cd4d41caaed6f304f485928fe26d7ddef64", "03d426a9599dd16e9af6c5fb2179f1cab47b2781d3ddd6328f6adc68ff99b3ca", "29f8d3c0fd123fd3e42a1e307b125e480f127b34d8a5ea0538b0c777c59d667b", "b0bbc847e151e7329521507b6a1f7a71919f733c51160325ef0d0f6c566927fa", "2d968cec87bddd9f67720ef3b16478021866f40a8c2aa344361107009eead82b", "42fa52bc09605db29f2988b265a3ecdf7811a7d50e2667189a4e35aa02605a6c", "f2a44d9464cae562e70b4d316a3c69a3d652a424093a7aef2324d5a7064137cb", "afdfde62720dd773b1cb761fb490147495ee8609748e17f8fdd2521664cd2829", "ede5b4f0490c71a539bf72e6c681c690c2f2639727340f9959e3e69090857af2", "3d93d0a08c5a2f7001d541bb33c56cd7f54a7cd4cf3e31ed8d622b1c91f1f165", "4804bed0c394e0903fbc9482f49050b4dd10861d6673f936ca023af4c005c7c3", "1a6da64387f396eab601bfd566c9537b35b0aa7172e012f966c3426b1fda7095", "afb462a42373a82512ec314f164c58bc53eaf3ce5a626512e7ac7ab0c93f3e90", "7c902c12412a1244efcedc71c81c6da8916eb48aeeb5260e61419103733ab0c5", "a8cd342ec818244765f6046a82467fac30cb243c810e1cc44967908e964e4b6f", "d874e15dc60680ee0b0424d22c94b526c9eda976a00c265e76a10e8e9328605b", "ba713cc1efb776e75b3c0b8bb06c21e666d620a0df3b2d6a6b1eb2975a0254c8", "9d6d6673ceecd5f46e311ce39fa4c765540541ab90013130ef2526030b33648f", "46c0ddc1812fc47ef0866c9f55f3d76645dc0a63217f937b740aec9f4d4b0dae", "fd491ef3dfc6fa0919209755dd1621ae1a4f01a8945150bb63720d696ce26385", "ec16d8277fbb027f7f6606824d4b8d7b168231c9720203d228869632ce1b8506", "bf75b2579c31b7bd70c07e8d687a37ef06f926704b534686df170a511bc9fcc4", "ffb996402f90d1a6c58985bc238a8f2867147602f71dd3740177263b7193d047", "05a3e3a55050860f713dbf55c837772beb369ad5c24065608c5be829d90bb176", "1b2ca4b9770883849613c45b03723e2d1373b98776d4343777dd974501bfdfb7", "dd67c2fcd061da02e1b9cd72bf85a5b817442232e3de7ca5b3686792351bd68d", "ecf9b3b7fb6d905be3d530c30146051f0e47ab9d237b2100d9cc1412cdde113e", "15fd78dbbf5a5c80239a2cf2c7efe8b52e9b0942f98bce03c7c98d9abcae7052", "e20bfcaf21194111a38c3a8de77b04967d9d399878f2ef34417790571963fb87", "30c84352f8c65b0bc2df7e549233aa460924e4d962267bdbfa6dbd5d0c2167ae", "ab8016e0c4d1a08616f8235a1af9e521d6415281fe31b30a2519a7146d8fb26a", "04bb2f768ca15388d2b97ef2921cdcb3931d9216380f396e92b3b8623c21f769", "dbbf96105d79e10ba937992b6db69293a7048f3b4889ad7a8d4d544dc2a29ed0", "35fdcea2d1cea202dfd3c91cbac45fd566989a0981501b2057f48adf1366066b", "546d01f0e4ced3891aa6cc28ce97b4432aa4ca8237727d69bd025d0f859f77d5", "5e83bac75553423b4dd03f7af373bd8ab3b902b63ef7c3747ed0f7ad952a3acc", "ec92bd7a6d692c604b08c2eaf5be3d59b0f32e3cb6b0c6819a7747f73559e02e", "c826845c0d7cb96adbf85178ceaab6c6762b9d42d4ecbcc157badd895d46bbec", "0fd21ce17c66bc0963ac6de34c74dc3afb002ac9a35da21d4f6aa6434fdfdbbf", "74ba8688b377e66a6dbcd3184a8a0343f7407b4fbfd10b225ae76eefbd9f3929", "5534233d55a59f2cc146104c2ed8a6579a30b9fc3f3bf9fe16dd37ea64a60f66", "9cd7ad8b73570476509f5b3c8815c53d45f182ce97a57ff66a359b510f6c7ffa", "5de0182bd8e6628a2625836d6f896bd23940d36fc06b6477ea920c8d1a8aa7d9", "ab7ff313af37cddbb69e75a85e1bf748f4146daba098bd7592b2620012e86512", "fc6845f978fcd62896506862f4fc756fe8fa3c03132d3963e845cdf6c21a9c7c", "bc5eb9db3fb948406fa834a655a428282bfb9af4330442a752c90c12f145a0da", "e63be5655030b1f845dacce5345e51381c8ab7c743bd66479a9d3189736c4047", "ea6703d22f7538d4353d0b11eedde6ab8453ff08372a82981c3a1a2d2a1ccfee", "01914b11b5d7752c3a0a0a609d6e9b8945279afd81a6140527f6c9e3e15c1911", "21b97b29dd0fb159041962d7d55e89d4ee11208996b5232775de02772cb013b9", "8faec3a1098331c7ab73da65d191f82b0ea7a0627f69f39ffedc6899ff35f69f", "d64e0520e30841465ec804888d7cddb7e114a46144437fe8a1c9a7e74f2a110f", "36079a7cf6d7451a61c3f3f2f5291d14e325f7caa6a65b53ccb3b809f6156322", "a6ca914ca674ac3d70dba366c3cd43d181e8a91e3136add805c88cb31e2b72ef", "40ad5fd27e743426b0b334dcc72b515065de2ab481eac08748d356b8257f714b", "007c5a99535780e2d6cfa9915acdd0b0e06d7c9b52f05bbb406ae17fc442bf52", "1ad0671fe6927f7b6670a0a355e2a8def9e3ae8da945aa09a2d3c5e7cf556ee3", "d6aa41995ad2ef20aa7ad03a8bf269dd92595d40396630d288e0fc1506bb196a", "b013c26168e8073f8a93b4de219fd71519306d8818389f1c7115f15207793aef", "d6484480ed5c93128c4d07a2cf90c5f6531fe9786264fc1bc09f7b0492caf798", "ed338c94e47003479a871634355d7a0a81e07e4fbb522120fca550280e1d6091", "7bd67487f8ade653976665ca7f2e27e792c8668a3d81a6f9046c323f2c8f58b6", "9ada9dab1a6a7fade895a8f3662ba18b7cb5ad49a5c570dcee03752213402bf0", "d65bd031dfa7bbec710a33ef8dd63bb8f2b1856c1108ef552be48e1dc58849a7", "1ebf98d62ff51d34643b6fef1cc92d1758ff88d60bcd85f075ad4a6d5d17c9ff", "5000989cd49361f2a31ee55fcd0bd34eafb91fc53a39078f782b1a3a6818d271", "ef6226f11682379d7acaabfc2bc3f5365f22f87693b0cbf268b26e0005bfc7f9", "21a08195c3f4f5cc8af4ef0d75bff834be1d0b2fa7e96a680997ec1e13133f30", "8002788a8fef0d676b8967c1fd2885d4c2235f818fa658d146c12ac14a4d0a61", "ada6d401a0fe1a89afdcf577f7bf247911777fd5e241b0df3502618a39e5b68d", "edd0efbac974818292d66e1d6ca6202ff215c76e73e49db3554e0340b45fe3b3", "7d9f8b10add5ff26f28739cb8ca225c701196fba9d1e0f1c0fe07cfb45a4fe7b", "d418abafdce5c8affe7618f0b3990f556c30c64dbf4ba679bae080960e793e02", "7e87832a053673d670f04957d2c24b7aa8cbc0d764ef653adf6fd0f575b44f6e", "d407bb44c39633fbb436d0f4a5e1d72c2c202b03873ab2fd2de9805bb3ef1650", "3d6af9cc526396d34547e53db1588074b7f7d4582048d5acc41d4acb60ee7e94", "20f7bb5efacb32ed57b701744b7ada75ee3c3f8ef527a5409ff897dbce7fcdea", "b16627d02db4295645c3480ed22d3909b1f8476c00daa0e3be7dcc17d9793951", "a13ff835a9189830bc00d28c77d06f3ff191ecda6a00989ea31582213eed2df5", "885df009db2ad9cca88710368a3aa3a46f65ddfe0ea047f03aca6837758181fd", "47281f677b58a967ed160dcd81e78aabb8fbef5f85546a0631228a15e51396a8", "0e973ae0095e71f818a8f24efafa45be1b66869304b4dcc0f1c2b43b24f72379", "c15049be4eafd094597ec9b4eebc5b5e627d0b8e0b98d70b0cd334d76056c1ac", "beb1e442304efcc217faeabe5c824eeb34d204a9d1e8c28dfd6b903189c2c426", "1d24627e808499c18ee5f06e82ea52bb5496c9c7142cf5d181d6da8656d46751", "a0c092ed68f1d49f81c247ef7e2850949640d83db3d44b724396b7a1631525f1", "597f5f8dfcbe3ee5e34c6a0f5f301db5398b43418be0958133709a93d840eba5", "9d9e47a60a4d0751b439c3f28849a00c4631be0e214de3639de0dca5e1b84f07", "3fc7fa8d864a5b0f5ff73a6c570a3725926b419b3a80c120139943dca9a54dd8", "d42a171c828c3777871574c7884f0675adce2830f87a71a934efbe7564dc7f33", "2cb30d5a0b8e1a298ea0acf3a5b4d39e855c8e48e21343140387f3b6cdaf1d64", "57cb806028d0143a6c2a48be3b235fe60541515ef557bcba5145f34faa397c64", "0fa660cdbc541ec3eb585034c259a69cf57a1b04e600de76f7d48cdc30972d66", "48e85b4561967332afb465e87ccc37447f441b732cc9dded7835768a1b6a7a98", "950db3f51c450c52d23e48b639825fc9f9aca0046c4220efc0d4e723e95d7ca6", "9ef3028d3ab219b8ca80d780cfaa2be636caeef9930cff40b3b8deafc96564ee", "261f9df15ecbb2373635be70d5f6f2bf7c15667970d4b401a4821659458d2662", "cb8a050a647757ec35312c8c79722e6398c920f057381d960b5c9afb96ba048c", "7e96c6980bfba7bfc8af7b319cef7f4754135dd3a1af1e6ef5e1914dd922ec59", "7d343cbbb29b6da53f697c2931c457785af16443824d6fc081da13785c383eaa", "d0fa486931ecbbaa5ae6b4ee8352c468281a97d2fd575f700f0cd90d2bdf73ce", "75e71bbef47cad3f861fb5d2edb93951bfe133153cd02e98f7287debe2e1a428", "5a632d7379133375ee9ffbdc08c3fdc3b1e5d7c784c51ca8fdbdcb4916198455", "cdfcc19652b0c8af3b29690c689dfd2e4d6a07de5db3895967203439b160a62e", "7d903a7898393de8aa58a0ce08c5a1165b8cf1b12b4d9dea25ed2f7bd00783e0", "ca64f78d23b6c403423c760b731284fe820271e5c5212e6a0771645b625b60b1", "02ecb6a52bd02854d41d060cbebe4eb3bb67f7b7e646e99fa4b4b4780cba631a", "d9328991ca03cf42c6f60fb5ee504b7a02f475e23fd92d03fb8c0e4de64c905e", "abb0f063dd04a59b699080078a4471532c3f745311e028681a3888fb5e4079ff", "72d10b282251b5695fad8528ede94c5b4b50db374b84a1713fc66dd93438aa5a", "35e4ec0b77ff230cb095f2991bdd4ce011e87d68c2b934f4e96c5fbc9d97eac0", "0fa18d9b8613a3eadfe5b182b2c58707de65361b297e19c8dd37b014ac10c57b", "86e65f7f0a5b1675d87686c9fb5c3ec66bb89538c43d1bb7e3695bff6406b01b", "5713f8b3dc44a394788dc76481e8355918bd84a8aba7e88124fe34996cd6e36d", "c64da3d03cbe239b514f60a483560c346643d00a1ad8af33e2193271d9768585", "a9afef442ffb3a0e1d66c03de008feab80bf7fa9f6174bf88228c5489442150c", "671516cadc9f9f127207725f52fec48ccdfef0f1efbd0f68923320d2041ec8f9", "e02fcec28f0a47049045ff7382c6218c13918fcbaf348c336bdd584d907941c1", "d857999cf86264fe5ecffe39052968df5bec4de3526e49ebebaa89b2831994c0", "4fbb5cb3e5d11443f24049da2ca24d55ae89ce19fc917d3b15303725983e0a57", "14659534fe020a507f69aec224c30d6a354af4c7a0f0dd343958c42dc6e7d0bd", "6710f7799e7c47f6ae665eeab777f6e2906013e2c3044a2b941530287b066fcf", "6fb9a68cdfd50fef96e17d66a89d4108bf7f22da180832b09acbc299d8a06e6c", "f6a61c53a328a81a5cdc8173cfc8350dc19b0febc68735171c06d8240ebe2f80", "a9b4999503533606168adbc0c3e870f414d75c5c7b71da2705c96efd19482319", "a75b0be11c4fa89c9bc8a100586d7fd695a0572ee029341b80d76ab6c91dbe5f", "fc53c9644c42a3924a60d1c60d8a3e7403caec2519d9409f650feb186c772045", "bf2e0847e95608e88f44f113a2c8b5c3584b912983bfbb8d2eef6e4c89566892", "3b9ccc52da21cf64a5ede783d57206ac6f640783e547e4d33fb364d9c5827108", "e008985f23c92c74a4b5b2334463fe08723ffea5951a2bb4f3eba75ab585caea", "ed900d0f360859c92dfb2d78e8bf1eec7ff265b21fef0a360cfb7642710c1d66", "c3df7a8f873121691e7734fcb1ccf8ebfd38062d7dd23bd853eca5f1f5c74fae", "e2ff8994b76b700628d1ed0423a498081fb969fcd96275345da850948d90c629", "0817c7575acbb11e267315976ee8d07708cdb469f32c925af35df4b71aadca24", "ede9d788ff253c27e8cfaca1353669d1eaf2fb73eeec4230d0d3525d0f284468", "74a3be4a0d4936f5b751d23ae5d18f9f77168e7907963b97e113258a367a87be", "6df56f98931c1a47997e9f638f65d85cbae21ebe8c353b56d0a1ee6b941a29fe", "0c9d43431aeea30a1c4eef3b8ac756fb54869ad548c1618e7715e31592282b0e", "7d60cb717ac709c5e65d39110208445e6fa3df58be59d33b0864e6e94dadc21a", "5ebba7548891c11d8c4cb562a18a49d79aab7be2a2dd277dfae8d573b61df735", "bfe8c0c45b08ad353a3fa96dbbea96b4b3438170a503fcbe77623631266673e8", "c22ed5fae93ab48b4f5356a618fd21ac7aa7f9bf04aa16e95a55a218a76b5ee0", "a34292085f4cd44f3313cef5645d9152694504ec4c1c2e9c9ac4390718933b99", "5e2278f6959e4f888cf7ef34a1554b7805553d78a88b4813dc7a7fa94ab60429", "44c7bffb7bf68d9aab38efe1305eabdb03775010ef96080feedbb61c370f9e91", "df19298f8ff05a8722ca3d8fbd9b9fcdba0760ab295025fb8b046dbab3acb542", "e864ebc721e3f9fd0a5c42b21f000dc9c655244ad6458e533d39511461fc23de", "75d69cf83533dac71037ffba052dc2cd5d1bc6b7db22f4813cd006132ce97c51", "3029f5cf21cd1ce9a1c22a4c12ba520914b77641cbf824ed73cb07627362a585", "89d56e05248285a64f3bbfe9094aa431b19db5498491ffd823839eb0de09a584", "cf5aaef413f97e02caf536983d5efeda59a41539afb170dc84a86d451722413e", "2080cd33bda48573fe580178791b27c53db6f5256882007c1ffe8143f91798cb", "1378bb1fe281ede9bb7475df434b20d914fff5b9d466f567c2d773843fdd0a5b", "000f677db373dbf26a3bdcd9e5236bfc749b526515bd7366ea1cd384d3805172", "5e4d85f428ee12f04c746cbf11a113d246ba927198569c5131a6afbeec8fb24f", "0041935e513d016fc5b614abadd8d50a9af30d104bf5a187b98cfc417aa19b3e", "d1f7c61d63e25c6b3df6967739baec262900b6a37776c36fb4fbbfca82380d61", "42344e17a936cdcd2629aa30d7c1887e790533bff6bd4af925ce6b4da0dca45d", "34ef2e8f31d5df519275d5e9ffdf96ea2fd0c761202ba9af0032a50aefda250f", "6e03a1f9d2736bb820b3a940fa06afbabde8d1d97d0f3c2c293e89ccde1b4b2e", "04f92d2c2bfcc3584a7b6166f793143170926514fa15416aba4e221fff656578", "15f9ce1a4b5a83f260f1085a91ea1beaa6a9ac04f0f15b0ad4a0a59431451710", "faeaed7172898c5ddbee404bd2742d65e421cac606fc8e20955c33a4772d3cc4", "133985789de2a3f2bc36481b26f7606babf190d8065f692d8bc6a4dc47aac6c0", "5a842799b816b2c1c6f0efda7b21d4c79520dd7371aead4671075c6501fdbcc1", "a9b7767c95bd34a4dc48c9fa462b7cc35312af0d9c6dff8b93b34b7f26160cdd", "16238607c3e7498e34aa2e6493b5646143def0b18c832a7b9b329748d717a73c", "31249b32b6f7eb1895a15e804a2dd83ccf66753f8f0cb0682c2668348d2c5061", "6ae1ff9345c8287bbba891622901474957bc8d6c2d23811f2278739b14250455", "3d2d67b6d8435896cd17ed6bbce42b52fb7806b6f1441474855f221b460c2afe", "55e6d5ab33574d9b5b8a428ef866a68b00b1b741e649ea3075dccb293fa6cdcd", "fe2cbe2791e45c12a6c6a5a6b490d27ccfa550f108f39198c184992bc0433bc0", "5524050f7dad9c5fef409e53637bc01e0b69b52aaae52beb5dbad7dee0d48cfd", "ff5f2a8866db11f27b0b50b1873937e037cffbaff4acb62a271193162c9c34b7", "ffec9fa6f6f5566dd5240ef1869633d6a1616af84eadb9d3c7d2c2e283adad4b", "908f6d5f2466654f9ccdac7fdfe92f4d432542930d7614f05162553e4b4ea145", "06c25f3e280cfb9649577c72f8e99b8db618fbfa06434a1c30c5733ab8ac06d6", "825e051db1070b31d733868e5dda8e344666cadc6d2b3a4ef5e2eee8b63652a4", "a3a0fd9832a8e2f028b64d208caefcd015e16ef24e42f2b9a07ed8b63ef8505e", "fd88d3d471f003ce51b871a4bd134d6615c5e2089bdd5e8f5a1408b9b6246259", "8d6971e80195bc06c5ebae87e4a317b1231e8ae4f6c8b133c5fb5bbbbec05193", "36ae227b8fa6a4c4c5dd7fc0a8d0a1036a71c1e7714a0ad066c64a8c63589e27", "bb197523d967a529d51af21436797b9973fcc7db8829d428213a16a79a7a696b", "606e6c36d7f37a336a3aef3fe8540a5d6b040650e07d73bb65d8c0df6d29ea14", "59c637a9e018cd4c2e9e0cbd1f5bc2a38f1e5fa44c05ae752c9c608e72718426", "4ebf29b2a1c2b774582b1c77ddf7cb1b799781ac25f2122569a96f578002fa88", "5028612869c7462f61d6a38ca061b42d1fe2aea0927de07e6608c47eed50808c", "3bbac74ec9f845eed3c52f905e76bd51b066f0f5ae232a39b9dbe683a4dd02df", "051e360fc41794b70e49a1846a48a8ef5b039af4f94b77413b3ff4b2686702b8", "3d853ebfb9a46301df4b654389d8845745e892ab5e42b6fd05497c4fed3c33b9", "2e2d2cd273767d29516ea42ea0ebc6ba80b84f3b1b7eb408f27166bf82364201", "8fbf63c34939b09e3c9dde7844da2a0ae97a23bb09d7d9328dca5304172e8af0", "1849c5dd351a98f6f49f7003752e244e47ea6478c3180682c48377ecd6f46e08", "a27b6438ffe3b01caa6b86ff020f2e3ad2eb6d4c23f32b2417bc9df6b7c71ba2", "97828ccb366999a8ef247cf3c9a4876600b593914f1699836150d3892953e8e2", "8ed2b34ac9d4503ce863593499f720a27c8527c1056afc6b04be8afd193208eb", "ddaeb6d0ebfaaa98810c84732d3a19ccec199a665bbcc9bec081c552b129c22a", "45da90ec6af996288b0b6df8492b18fa7904ec3607367e98df1bafd75a600040", "2c986060e9895146774091b2b32a9b41cad5a413955ca65972f845af905b88ac", "5318a622315888591a087588c204941ed349e3c015f4d6ee3eac91a69ce1d0dd", "942bf85bbdfd231fdae434112bf47571b810e7f5daeb3e2e5e5f485783c5b9c0", "44e36fb5d3b2d40df35cd8efe14a6451c69dfe9ff38f921e83d3a1c23f1d0fe0", "9d8b733c108d5515b4cd1cae2f71ed5ccabf002f060a5659aaa28f77aba07e3b", "f3df8c11aea12d7b3f5dd75051c86d335f266ea3e50d862d2a8dd65caf68b38e", "22c453bbc8076ec0837560f59d8564ab0c9784b97d193f4374592edcd608d3e9", "21521d09b2079fc98ffbde15052133f76cc6bb9cb1cc6b013b126481c4bc422b", "e6f737c3659fad29eebc2bc03804a2d5f497dc56bb86b07ac15bbd9b8d4cc6ac", "b3c73bc8fd84dc463a2dc705c937f030dfa963e07996e237288b4a777af8f32c", "287d81cce340080bf5ee66a856149f2f298fe2beff00d03c601ddbd423a0770d", "f0187d6f4d3648cf4bb677af698fdd39ef98fd3fcd87ba574ad377b62ca59e07", "82e0c6d3259d27a11501210557c47a5e04170dffcbc87f4fd94b33deb0b01a06", "e361a56847e2dbd85b29cc47ad0a9f317948a75a9ce01ffe6104ebfdb17fcd9e", "c766d12c93b33fe9f8cac207b7456277e1788e18b45b79ea327dc06afbbd617d", "38f2f7c10e279d8120f42f6754a2bd0327811e35dfa38c631d8cbbf4cb7cbeb7", "fa79d933de40f2e8a66d6b1cd1a591c7dc302a4d337814dbc47bb44cf5f876ef", "85415fc3625bb4cfb21e4c6aa94e54d95db9287e618e58ce681a6d7e81b0571b", "62df43f50a8e12e0eb19341506f6acfa6508b5b12179b58e01dcb2ad98281902", "9f67764656f18869bfefb488764b754ef03c3ca84ae0993509559f8c4f0cd015", "a9047fe9d806b5fcfac04665fa12ddc067cb7cb7cee81eedf0fdbfef1193439e", "fbedc6bd420c3dfc331e32d083b7112fcdf9808d7961fc19935748eba8701f59", "36b432ae553491a885628a0e8e7955f4f18fb8bfdd83e7bb5065316655c8fbf7", "9c784bde52fc6cee81e29d77eb96ab04eaa658ac04fb60c8141e1414926678ba", "2ecfe5c2778225ac9b43e7aca0a3cf994326d20a5e985922e66543e635703eee", "149c213aa3fe3b28f35d3690240bffa0129a67b196cd6e5a720a44ff72a79e3c", "aef34d11c0d46b80004520147bbd884b23a59d481e8bdd6afc60290a17a6d7ad", "267daec638c20500c8d9b2ebb18e4267730a904dd60659283f04b1513ca78505", "7c70abe3d9d0565f7336c2dd1696f5ad39df30a6cca2582d3938e1641260091a", "14440661621d6daae7f25e90926412bb71cd599e54949bea72d96734b9dbcd8c", "0ea7acfc0ebf9b49db0db20d6904b6cb5a84a983b7d2b2cb090f39e0ded55ef6", "2f2201b70fa6dce2e70f2fd4359beef92f6297729ab5d582a16df5ca6c79aa32", "bd85d1d77b091c4cf1a9eb5575649950c5b3b3b291e43267542f0289292b5c60", "776967e26fa02b834584aa1c7e42029949f09cdbfb5cae3d9a28c2d17c8110d9", "64627671509df2bb0514e84c79d143012ff603315ed534698e67917e31f00771", "eaa9ec49979ce69b3465d734b23514ea7f4a0a44a48ff728312293eb31406b64", "dbb22b5354fc6f458b908d9a0b365508c95da1cbe9c3d75cab7634ef60cea60c", "5790e390c28373454ec017bdfa4cc14dd0a5f38357aa8894904d472e31660081", "18acf46a2ad715bb842ae88610a0c51d9268c39c94db0f24d9f09294690ee0df", "c410991730b1b016c484a774d4726b5cbcd0a4cf30271d6cca31215e9e235d85", "fa4e717ffdc0e79fe13ffb48534447907a62239dd13cedbfedbd9ced885f7f12", "aa4009ad8765b001cbbc7e27a23919391ac323d2b1fb9568244c64284d01b41a", "7e69d1c976f6bcd5c980291145e60f0f5bc7d359602ead1d86a2590386ae60c7", "cb74f365c898f5429d969d4eef6b14b950e4395c1b3bcbd62faf5087e6a4c94d", "fb265e5b3bddfc369c329c8b6f3cb0b8e91aa3051c4b21186c184c4b1cf90115", "3708a9fe7390750d1a99a7bba49274363ab87d80c2d69f42d126be926e0b639d", "0910f2583e09a13de0fd7dbc560e4030e2be13eb793024cc04871cfe14e7a99d", "e429cf46dd807a21b3e3260acd8d55fe93e614c67ebd360b4598ed6ab648ff45", "c3c0e69a5d2bbb95a90993e92c90b40d4ecc6af6bf47f27c34b22b100d482e12", "e1837d3f238452ad3df540e983c2c8a17a0dda7d6c57d084b8ee1388395e8554", "0b93aa8de9162e506d546ec3ce18fa80ca7bd6de17fe40c3423ccbf86aa23ff7", "d4de2efbd8d7402a61a162251a6f1b215d8f07bba6e338df307cc28a9d190afb", "abb863f9b017ba91265a66bd2da4b62f030add163163ab9b231e058f1eba70db", "1130a210a04e0e9a41840ce2fe0426ee4f49dc2ce071a4b38ba0eae7e5f104de", "c22b739e46996f0843d121dd29d5658267b508ee7c6e8522f3a8088a47201689", "c46743101ee780d99c4978ee6237fe58dbaad2da71bb21e07f423c94192ae8db", "e26335fe6f7701627f02d22474c34b6001ef64e25dd1d3a46ec0dd58efcdebd2", "072d5a96732f13e46ec137cebfd837c5e7c1cc6e0ab814aa116521040cf52eb9", "3295a894ca4ba476151447bd72ce962a3e8d63516aa7bd637041abcdc1f5c109", "655c959db0f73e69f08f94ce4363ed65cd5cb318216cbfa3d7470337b2266549", "08b6b1559de35861156af2017771ef64b9dc172aff263e154000ac10c5dfeefb", "04d17bcb267a0522f80017ae03145b10fee9e7e8f2a0ed1c27f191a0d26ff58d", "1ad3cc716175e34c1deadc441650f6d3f8ad28e982845821c108476fdf85f9ee", "efa24b71008ce1c0cfa7d5aad48dbbe1c21c3bc86c26f6dc0156f41044eff365", "9289aeb25654013b9e6dac7500cecd8d5dc9e39fd830fef5ce3ef97a0e6233fb", "d504f2d40295aaa06b6ff1c7a08fa24c85f521a4d7bbdc0193c2dec2ab9d8ec6", "813fa616d0d8669aa5ccb1daf82f2fe81f5884eb6056123fcc29cfbef0626b9f", "34fec1f2da561b482b851c017ddaec7f98ac02fcd15a254657461946514cc5d8", "3a6d731d8e863cbc20326aff6d4e9cab0adfe02b1b4626a440b0683e3955e476", "ff12ac3ae64bf335fe4c6d7c4b714e8a836fbf30b5e391a2aaaf225dc0c36a5d", "544149eba354ad56a6e8edf262538c1d3b5be780bf96defe1ba65a68f504d763", "67d02a5a8f8fb3783fa027e3aec9cefcfedbb3b1367917cf6f18403303b53e6c", "b3ec4c2693bd2d6b4b40d466708f6abe526f217f58f2ca10a276f03203466f5f", "bcdd86c45d98675d83c94854d2f7fe01b1077a47415518563e533d79a7b6c826", "c77387073ce96970ed1631c6a0a4415c59874b70216604f5c1fb6bc4673f455e", "a6e3d05d6e1876925a408ec0a4d98854c553a59d475b9f73c9d34b6d937c2489", "3cf521c4ac6893ba4476a2a344dab43234aa83c740e8c3b8048649a6083b8f6f", "a7cb41ebef02ccf35171ab2c9e61dd6be61222c16445259f5140a6fc63cf9816", "0f3397503ef9a238aca74383fc5e6d9a9c76fcbbd9c6910e68f8f8ada6447f67", "39c417aee24ab857382af60923418aadb566b68209f9a1142f911d27c7418df9", "d93b58717bb36a7f129cb90690d1e0353b0ab2309acadfe28d7909e7adb397c4", "c23d2f9042e94d764c21f313b7362ea354cabf3cb511c008be18b18a4f9b1d28", "fb7efca5237e88e98b58c83619f6365e766b47590e18f8b9354548af699f5bcc", "561321326aff34b335f887ae170a75b8f923c1846841f714ef73ac9d66833157", "e6aa8ce44c9bb8b25f3e4a0285c61f9c2c6a6be4babe5f39285fc34e2677c6e2", "89857e628c26e84e71e1456d47577418cbe4af4485daae76361defbea307688b", "dc53cd3bb89e3049f40a5409a74fd65afb9f21fd1161e7ece8295abbb198d536", "a6dbf4b373a1afc6a1b951bcc2078a21950ad1921462ad247dde78761586dabd", "aaaa7fbf3523d43f28448e6f5c1b3adf7afe6f792073c412eb2108c05508d0b2", "67b69e8bac879c43bdc1fcda92719b0c66f17a9379bb61ffe62d08fa039c64e1", "5d60066276c9f3aacfd74dac0765886af29ea1c4915278b96079ba373ab47f9b", "1dbd5b2cef68d98b8c020bfa9d36a70e89449ab8e222728ab95f97e88062537c", "0f193261b8829e2a293fb961c58bbf0541b190e69a1685b63fe7a2550a761fdf", "2e9998fb482a464dc1d206a52ae6ae992816733be76f7e6140010e2da20b3356", "df58f1c487278d247b656022c040881f5fa07c3b9afca4e8becc862e2fef4f9d", "344695302086351c4ebffc6bab0334e8bc235442e781805f04e4a324aa8c49ed", "2bf7eb6e6bffc54640959e1cb021ddd1f88e9dd98fb2f499c42e2d72caba1d7c"]);
-    const LLAVE_USADOS = 'df_codigos_usados';
-    const ALF_CODIGOS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const SECRETO_CODIGOS = 'RKTLC5UPUQ23B8N4QQCWWQ48';
-    // 4 caracteres verificadores calculados a partir del código aleatorio y el secreto
-    function checkCodigo(payload) {
-        const hx = sha256hex(SECRETO_CODIGOS + payload);
-        let r = '';
-        for (let i = 0; i < 4; i++) r += ALF_CODIGOS[parseInt(hx.substr(i * 2, 2), 16) % 32];
-        return r;
-    }
-    function esCodigoValido(c, h) {
-        if (CODIGOS_VALIDOS.has(h)) return true;
-        if (c.length === 15 && c.indexOf('RDN') === 0) return checkCodigo(c.slice(3, 11)) === c.slice(11);
-        return false;
-    }
 function sha256hex(str) {
     const P = []; for (let n = 2; P.length < 64; n++) { let ok = true; for (const p of P) { if (p * p > n) break; if (n % p === 0) { ok = false; break; } } if (ok) P.push(n); }
     const frac = x => Math.floor((x - Math.floor(x)) * 4294967296);
@@ -3157,117 +3124,13 @@ function sha256hex(str) {
     return H.map(x => (x >>> 0).toString(16).padStart(8, '0')).join('');
 }
 
-    const _usadosMem = new Set();
-    function leerUsados() {
-        try { return new Set(JSON.parse(localStorage.getItem(LLAVE_USADOS) || '[]')); } catch (e) { return _usadosMem; }
-    }
-    function guardarUsados(set) {
-        try { localStorage.setItem(LLAVE_USADOS, JSON.stringify([...set])); } catch (e) { set.forEach(h => _usadosMem.add(h)); }
-    }
-
-    // ===== Servidor de códigos (Google Apps Script + Google Sheets) =====
-    // Pega aquí la URL de tu implementación (termina en /exec).
-    // Mientras esté vacía, la página usa los códigos locales de codigos_descarga.csv.
-    const URL_SERVIDOR = '';
-
-    async function llamarServidor(datos) {
-        const r = await fetch(URL_SERVIDOR, { method: 'POST', body: JSON.stringify(datos) });
-        return await r.json();
-    }
-
-    async function validarCodigoPago() {
-        if (!URL_SERVIDOR) return validarCodigoLocal();
-        const err = document.getElementById('pago-error');
-        if (typeof descargandoTodas !== 'undefined' && descargandoTodas) return;
-        err.textContent = '';
-        let c = document.getElementById('pago-input').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        if (c.length === 8) c = 'RDN' + c;
-        if (!c) { err.textContent = 'Escribe tu código.'; return; }
-        const btn = document.querySelector('.pago-codigo .btn-rojo');
-        const txt = btn.textContent;
-        btn.disabled = true; btn.textContent = 'Verificando…';
-        let r;
-        try {
-            r = await llamarServidor({ accion: 'canjear', codigo: c });
-        } catch (e) {
-            err.textContent = 'No se pudo verificar el código. Revisa tu conexión e intenta de nuevo.';
-            return;
-        } finally {
-            btn.disabled = false; btn.textContent = txt;
-        }
-        if (!r.ok) {
-            err.textContent = r.error === 'usado' ? 'Este código ya fue utilizado. Pide uno nuevo.'
-                : r.error === 'ocupado' ? 'El servidor está ocupado. Intenta de nuevo en unos segundos.'
-                : 'Código incorrecto. Se te da cuando se confirma tu pago.';
-            return;
-        }
-        // el servidor ya lo marcó como usado; si la descarga falla, se devuelve
-        cerrarPago();
-        window.__descargaFallo = false;
-        await descargarTodas();
-        if (window.__descargaFallo) { try { await llamarServidor({ accion: 'liberar', codigo: c, token: r.token }); } catch (e) {} }
-    }
-
-    // ===== Panel de administrador (abre la página con #admin al final de la dirección) =====
-    function abrirAdmin() { document.getElementById('admin-overlay').classList.add('abierto'); }
-    function cerrarAdmin() {
-        document.getElementById('admin-overlay').classList.remove('abierto');
-        if (location.hash === '#admin') { try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} }
-    }
-    function filaAdmin(codigo, estado, usado) {
-        const d = document.createElement('div'); d.className = 'adm-fila';
-        const b = document.createElement('b'); b.textContent = codigo; d.appendChild(b);
-        const e = document.createElement('span');
-        e.className = 'adm-estado ' + (estado === 'usado' ? 'usado' : 'disp');
-        e.textContent = estado === 'usado' ? 'Usado' : 'Disponible';
-        if (usado) e.title = usado;
-        d.appendChild(e);
-        if (estado !== 'usado') {
-            const cp = document.createElement('button'); cp.type = 'button'; cp.className = 'pago-copiar';
-            cp.setAttribute('data-copiar', codigo); cp.textContent = 'Copiar'; d.appendChild(cp);
-            const wa = document.createElement('a'); wa.className = 'adm-ws'; wa.textContent = 'WhatsApp';
-            wa.target = '_blank'; wa.rel = 'noopener';
-            wa.href = 'https://wa.me/?text=' + encodeURIComponent('Tu código para descargar las 3 hojas de Datos Fijos es: ' + codigo);
-            d.appendChild(wa);
-        }
-        return d;
-    }
-    async function adminLlamar(accion, extra) {
-        const msg = document.getElementById('admin-msg');
-        msg.textContent = '';
-        if (!URL_SERVIDOR) { msg.textContent = 'Falta pegar la URL del servidor en URL_SERVIDOR (dentro del código de la página).'; return null; }
-        const clave = document.getElementById('admin-clave').value;
-        if (!clave) { msg.textContent = 'Escribe la clave de administrador.'; return null; }
-        try {
-            const r = await llamarServidor(Object.assign({ accion: accion, clave: clave }, extra || {}));
-            if (!r.ok) { msg.textContent = r.error === 'clave' ? 'Clave incorrecta.' : 'No se pudo completar (' + r.error + ').'; return null; }
-            return r;
-        } catch (e) { msg.textContent = 'No se pudo conectar con el servidor.'; return null; }
-    }
-    async function adminGenerar() {
-        const r = await adminLlamar('crear', { cantidad: 1 });
-        if (!r) return;
-        const lista = document.getElementById('admin-lista');
-        lista.textContent = '';
-        r.codigos.forEach(c => lista.appendChild(filaAdmin(c, 'disponible', '')));
-    }
-    async function adminListar() {
-        const r = await adminLlamar('listar');
-        if (!r) return;
-        const lista = document.getElementById('admin-lista');
-        lista.textContent = '';
-        if (!r.filas.length) { document.getElementById('admin-msg').textContent = 'Aún no hay códigos.'; return; }
-        r.filas.forEach(f => lista.appendChild(filaAdmin(f.codigo, f.estado, f.usado)));
-    }
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarAdmin(); });
-
     function abrirPago() {
-        if (window.__adminSesion) { descargaAdmin(); return; }   // el administrador descarga sin código
+        if (window.__adminSesion) { descargaAdmin(); return; }   // el administrador descarga sin PIN
         document.getElementById('pago-error').textContent = '';
         document.getElementById('pago-input').value = '';
         document.getElementById('pago-overlay').classList.add('abierto');
     }
-    // Número que recibe el aviso (formato internacional, sin + ni guiones)
+    // Número que recibe el comprobante (formato internacional, sin + ni guiones)
     const WS_AVISO = '584123334053';
     function avisarPagoWhatsApp() {
         const fecha = (document.getElementById('fecha-global') || {}).value || '';
@@ -3276,46 +3139,6 @@ function sha256hex(str) {
     }
     function cerrarPago() {
         document.getElementById('pago-overlay').classList.remove('abierto');
-    }
-    async function validarCodigoLocal() {
-        const err = document.getElementById('pago-error');
-        if (typeof descargandoTodas !== 'undefined' && descargandoTodas) return;
-        let c = document.getElementById('pago-input').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        if (c.length === 8 || c.length === 12) c = 'RDN' + c;
-        if (await canjearPinSiAplica()) return;
-        if (API_URL) {
-            if (!c) { err.textContent = 'Escribe tu código.'; return; }
-            err.textContent = 'Verificando…';
-            let r;
-            try { r = await api('canjear', { codigo: c }); }
-            catch (e) { err.textContent = 'No se pudo verificar el código. Revisa tu conexión e intenta de nuevo.'; return; }
-            if (!r.ok) {
-                err.textContent = r.error === 'usado' ? 'Este código ya fue utilizado. Pide uno nuevo.'
-                    : r.error === 'invalido' ? 'Código incorrecto. Se te da cuando se confirma tu pago.'
-                    : 'No se pudo verificar el código. Intenta de nuevo.';
-                return;
-            }
-            err.textContent = '';
-            cerrarPago();
-            await descargarTodas();
-            return;
-        }
-        const h = sha256hex(SAL_CODIGOS + c);
-        if (!c || !esCodigoValido(c, h)) {
-            err.textContent = 'Código incorrecto. Se te da cuando se confirma tu pago.';
-            return;
-        }
-        const usados = leerUsados();
-        if (usados.has(h)) {
-            err.textContent = 'Este código ya fue utilizado. Pide uno nuevo.';
-            return;
-        }
-        // se marca como usado de una vez; si la descarga falla, se devuelve
-        usados.add(h); guardarUsados(usados);
-        cerrarPago();
-        window.__descargaFallo = false;
-        await descargarTodas();
-        if (window.__descargaFallo) { const u = leerUsados(); u.delete(h); guardarUsados(u); }
     }
     document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarPago(); });
     document.addEventListener('click', e => {
@@ -3458,21 +3281,10 @@ function sha256hex(str) {
         </div>
 
         <div id="adm-panel" style="display:none">
-            <p class="adm-aviso" id="adm-modo"></p>
-            <div class="adm-hist-t"><span>Solicitudes de pago <span class="adm-chip usado" id="sol-cuenta">0</span></span><span><button type="button" class="pago-copiar" onclick="cargarSolicitudes()">Actualizar</button></span></div>
-            <div class="adm-hist" id="sol-lista" style="margin-bottom:14px"><div class="adm-vacio">Sin solicitudes.</div></div>
-            <div class="adm-nuevo"><button type="button" class="btn-rojo" id="adm-descargar" onclick="descargaAdmin()">Descargar las 3 hojas (sin código)</button></div>
-            <div class="adm-nuevo"><button type="button" class="btn-borde" onclick="nuevoCodigoAdmin()">Generar código nuevo</button></div>
-            <div class="adm-codigo" id="adm-resultado" style="display:none">
-                <b id="adm-codigo-txt"></b>
-                <div class="adm-acciones">
-                    <button type="button" class="pago-copiar" id="adm-copiar" data-copiar="">Copiar</button>
-                    <button type="button" class="pago-copiar" onclick="enviarCodigoWs()">Enviar por WhatsApp</button>
-                </div>
-            </div>
-            <div class="adm-resumen" id="adm-resumen"></div>
-            <div class="adm-hist-t"><span>Registro de códigos</span><span><button type="button" class="pago-copiar" onclick="refrescarAdmin()">Actualizar</button><button type="button" class="pago-copiar" onclick="exportarHistorial()">Descargar lista</button></span></div>
-            <div class="adm-hist" id="adm-hist"></div>
+            <p class="adm-aviso">Acepta cada solicitud para generar el PIN de 4 dígitos. El cliente lo recibe solo en su pantalla.</p>
+            <div class="adm-hist-t"><span>Solicitudes de pago <span class="adm-chip usado" id="sol-cuenta">0 pendientes</span></span><span><button type="button" class="pago-copiar" onclick="cargarSolicitudes()">Actualizar</button></span></div>
+            <div class="adm-hist" id="sol-lista" style="margin-bottom:14px;max-height:420px"><div class="adm-vacio">Sin solicitudes.</div></div>
+            <div class="adm-nuevo"><button type="button" class="btn-rojo" id="adm-descargar" onclick="descargaAdmin()">Descargar las 3 hojas (sin PIN)</button></div>
             <div class="adm-nuevo" style="margin-top:14px">
                 <button type="button" class="pago-copiar" id="adm-huella-act" style="display:none" onclick="activarHuella()">🫆 Activar huella en este teléfono</button>
                 <button type="button" class="pago-copiar" id="adm-huella-quitar" style="display:none" onclick="quitarHuella()">Quitar huella</button>
@@ -3484,37 +3296,13 @@ function sha256hex(str) {
 </div>
 
 <script>
-    // URL de tu hoja de Google (Apps Script). Termina en /exec. Si la dejas vacía, la página funciona en modo local.
+    // URL de tu servidor (Google Apps Script). Termina en /exec.
     const API_URL = 'https://script.google.com/macros/s/AKfycbxjveSxaZ4sk9vJ0z6AsRXcvBM6emiO5-UNPTNvOU2QjRLUplLc57E3vH9DxlS0PDQYlA/exec';
-    // Huella de tu usuario y clave (solo se usa en modo local; en modo hoja de Google lo verifica el servidor)
-    const ADMIN_HASH_LOCAL = '2a969ff6de4bc4bbd7de67f841000663c4cc716662e57ae798d4d56afbdb3c06';
-    const LLAVE_HIST = 'df_admin_historial';
-    let _histMem = [];
-    let _ultimoCodigo = '';
     let _admH = '';
-    let _lista = [];
 
     async function api(accion, datos) {
         const r = await fetch(API_URL, { method: 'POST', redirect: 'follow', body: JSON.stringify(Object.assign({ accion: accion }, datos || {})) });
         return await r.json();
-    }
-
-    function leerHist() { try { return JSON.parse(localStorage.getItem(LLAVE_HIST) || '[]'); } catch (e) { return _histMem; } }
-    function guardarHist(h) { _histMem = h; try { localStorage.setItem(LLAVE_HIST, JSON.stringify(h)); } catch (e) {} }
-    function listaLocal() { return leerHist().map(x => ({ c: x.c, e: '', g: new Date(x.t).toLocaleString('es-VE', { dateStyle: 'short', timeStyle: 'short' }), u: '', n: x.n || '' })); }
-
-    function generarCodigoUnico() {
-        const usados = new Set(leerHist().map(x => x.c));
-        let codigo;
-        do {
-            const arr = new Uint8Array(8);
-            if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(arr);
-            else for (let i = 0; i < 8; i++) arr[i] = Math.floor(Math.random() * 256);
-            const payload = Array.from(arr, b => ALF_CODIGOS[b % 32]).join('');
-            const full = payload + checkCodigo(payload);
-            codigo = 'RDN-' + full.match(/.{4}/g).join('-');
-        } while (usados.has(codigo));
-        return codigo;
     }
 
     function abrirAdmin() {
@@ -3538,7 +3326,7 @@ function sha256hex(str) {
         if (window.renderGaleria) renderGaleria();
         abrirAdmin();
     }
-    // Solo con la sesión de administrador iniciada: descarga las 3 hojas sin código ni pago
+    // Solo con la sesión de administrador iniciada: descarga las 3 hojas sin PIN ni pago
     async function descargaAdmin() {
         if (!window.__adminSesion) { abrirAdmin(); return; }
         cerrarAdmin();
@@ -3547,127 +3335,26 @@ function sha256hex(str) {
     }
 
     async function entrarAdmin() {
-        const err = document.getElementById('adm-error');
         const u = document.getElementById('adm-user').value.trim();
         const c = document.getElementById('adm-pass').value;
         const h = sha256hex(SAL_CODIGOS + 'adm:' + u + ':' + c);
         return entrarConHash(h);
     }
-
     async function entrarConHash(h) {
         const err = document.getElementById('adm-error');
-        if (API_URL) {
-            err.textContent = 'Verificando…';
-            let r;
-            try { r = await api('listar', { h: h }); } catch (e) { err.textContent = 'No se pudo conectar con la hoja de Google.'; return; }
-            if (!r.ok) { err.textContent = r.error === 'auth' ? 'Usuario o clave incorrectos.' : 'Error del servidor. Intenta de nuevo.'; return; }
-            _lista = r.filas || [];
-        } else {
-            if (h !== ADMIN_HASH_LOCAL) { err.textContent = 'Usuario o clave incorrectos.'; return; }
-            _lista = listaLocal();
-        }
+        err.textContent = 'Verificando…';
+        let r;
+        try { r = await api('sol_listar', { h: h }); } catch (e) { err.textContent = 'No se pudo conectar con el servidor.'; return; }
+        if (!r.ok) { err.textContent = r.error === 'auth' ? 'Usuario o clave incorrectos.' : 'Error del servidor. Intenta de nuevo.'; return; }
         _admH = h;
         window.__adminSesion = true; document.body.classList.add('es-admin'); if (window.renderGaleria) renderGaleria();
         err.textContent = '';
         document.getElementById('adm-pass').value = '';
         document.getElementById('adm-login').style.display = 'none';
         document.getElementById('adm-panel').style.display = '';
-        document.getElementById('adm-resultado').style.display = 'none';
         document.getElementById('adm-error2').textContent = '';
-        document.getElementById('adm-modo').textContent = API_URL
-            ? 'Conectado a tu hoja de Google: aquí ves qué códigos ya fueron usados.'
-            : 'Modo local: este panel no puede ver si un código ya se usó. Conecta tu hoja de Google para tener el registro de canjes.';
-        renderLista();
         if (window.cargarSolicitudes) cargarSolicitudes(true);
         if (window.actualizarHuellaUI) actualizarHuellaUI();
-    }
-
-    async function refrescarAdmin() {
-        const e2 = document.getElementById('adm-error2'); e2.textContent = '';
-        if (API_URL) {
-            try { const r = await api('listar', { h: _admH }); if (r.ok) _lista = r.filas || []; else e2.textContent = 'No se pudo actualizar.'; }
-            catch (e) { e2.textContent = 'No se pudo conectar con la hoja de Google.'; }
-        } else { _lista = listaLocal(); }
-        renderLista();
-    }
-
-    async function nuevoCodigoAdmin() {
-        const e2 = document.getElementById('adm-error2'); e2.textContent = '';
-        let c;
-        if (API_URL) {
-            try { const r = await api('generar', { h: _admH }); if (!r.ok) { e2.textContent = 'No se pudo generar el código.'; return; } c = r.codigo; }
-            catch (e) { e2.textContent = 'No se pudo conectar con la hoja de Google.'; return; }
-        } else {
-            c = generarCodigoUnico();
-            const h = leerHist(); h.unshift({ c: c, t: new Date().toISOString(), n: '' }); guardarHist(h.slice(0, 500));
-        }
-        _ultimoCodigo = c;
-        document.getElementById('adm-codigo-txt').textContent = c;
-        document.getElementById('adm-copiar').setAttribute('data-copiar', c);
-        document.getElementById('adm-resultado').style.display = '';
-        await refrescarAdmin();
-    }
-
-    function enviarCodigoWs() {
-        if (!_ultimoCodigo) return;
-        const msg = 'Pago recibido, gracias. Tu código para descargar las 3 hojas de Datos Fijos es: ' + _ultimoCodigo + ' (sirve una sola vez).';
-        window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
-    }
-
-    async function guardarNota(codigo, nota) {
-        if (API_URL) { try { await api('nota', { h: _admH, codigo: codigo, nota: nota }); } catch (e) {} }
-        else { const hh = leerHist(); const k = hh.findIndex(y => y.c === codigo); if (k > -1) { hh[k].n = nota; guardarHist(hh); } }
-    }
-    async function restablecerCodigo(codigo) {
-        if (!confirm('¿Restablecer este código para que se pueda usar otra vez?')) return;
-        try { const r = await api('restablecer', { h: _admH, codigo: codigo }); if (!r.ok) throw 0; } catch (e) { document.getElementById('adm-error2').textContent = 'No se pudo restablecer.'; return; }
-        refrescarAdmin();
-    }
-
-    function renderLista() {
-        const cont = document.getElementById('adm-hist');
-        const res = document.getElementById('adm-resumen');
-        cont.innerHTML = ''; res.innerHTML = '';
-        if (API_URL) {
-            const disp = _lista.filter(x => x.e === 'Disponible').length, usa = _lista.filter(x => x.e === 'Usado').length;
-            res.innerHTML = '<span class="adm-chip disp">Disponibles: ' + disp + '</span><span class="adm-chip usado">Usados: ' + usa + '</span>';
-        }
-        if (!_lista.length) { cont.innerHTML = '<div class="adm-vacio">Aún no has generado códigos.</div>'; return; }
-        _lista.forEach(x => {
-            const f = document.createElement('div'); f.className = 'adm-fila';
-            const b = document.createElement('b'); b.textContent = x.c;
-            f.appendChild(b);
-            if (API_URL) {
-                const bg = document.createElement('span'); const us = x.e === 'Usado';
-                bg.className = 'adm-badge ' + (us ? 'usado' : 'disp'); bg.textContent = us ? 'USADO' : 'Disponible';
-                f.appendChild(bg);
-            } else { f.appendChild(document.createElement('span')); }
-            const sm = document.createElement('small');
-            sm.textContent = 'Generado: ' + (x.g || '—') + (x.u ? '  ·  Usado: ' + x.u : '');
-            f.appendChild(sm);
-            const inp = document.createElement('input'); inp.type = 'text'; inp.placeholder = 'Cliente (opcional)'; inp.value = x.n || '';
-            inp.addEventListener('change', () => guardarNota(x.c, inp.value.trim()));
-            f.appendChild(inp);
-            const bts = document.createElement('div'); bts.className = 'adm-bts';
-            const cp = document.createElement('button'); cp.type = 'button'; cp.className = 'pago-copiar'; cp.textContent = 'Copiar'; cp.setAttribute('data-copiar', x.c);
-            bts.appendChild(cp);
-            if (API_URL && x.e === 'Usado') {
-                const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'pago-copiar'; rs.textContent = 'Restablecer';
-                rs.addEventListener('click', () => restablecerCodigo(x.c));
-                bts.appendChild(rs);
-            }
-            f.appendChild(bts);
-            cont.appendChild(f);
-        });
-    }
-
-    function exportarHistorial() {
-        const filas = [['Código', 'Estado', 'Generado', 'Usado', 'Cliente']].concat(_lista.map(x => [x.c, x.e, x.g, x.u, x.n]));
-        const csv = '\ufeff' + filas.map(r => r.map(v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"').join(';')).join('\r\n');
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-        a.download = 'codigos_generados.csv';
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
     }
 
     function revisarHashAdmin() { if (location.hash === '#admin') abrirAdmin(); }
@@ -3680,51 +3367,69 @@ function sha256hex(str) {
 // =====================================================
 // SOLICITUDES DE PAGO + PIN DE 4 DÍGITOS (un solo uso)
 // Cliente: solicita verificación -> el admin acepta -> el PIN le llega solo a su pantalla.
+// Si cierra la página: PIN + su teléfono sirven para descargar.
 // =====================================================
 (function () {
-    const LLAVE_SOL = 'df_solicitud';
+    const LLAVE_SOL = 'df_solicitud', LLAVE_TEL = 'df_tel';
     let _timer = null, _memSol = null, _prevPend = -1;
 
+    const soloDig = v => String(v || '').replace(/\D/g, '');
     function solLeer() { try { return JSON.parse(localStorage.getItem(LLAVE_SOL) || 'null'); } catch (e) { return _memSol; } }
     function solGuardar(v) { _memSol = v; try { v ? localStorage.setItem(LLAVE_SOL, JSON.stringify(v)) : localStorage.removeItem(LLAVE_SOL); } catch (e) {} }
-    window.solLeer = solLeer; window.solGuardar = solGuardar;
+    function telLeer() { try { return localStorage.getItem(LLAVE_TEL) || ''; } catch (e) { return ''; } }
+    function telGuardar(t) { try { localStorage.setItem(LLAVE_TEL, t); } catch (e) {} }
 
-    function pintarEstado(html, tipo) {
+    function pintarEstado(contenido) {
         const el = document.getElementById('sol-estado');
-        el.style.display = html ? '' : 'none';
-        el.textContent = ''; if (!html) return;
-        if (typeof html === 'string') el.textContent = html; else el.appendChild(html);
+        el.textContent = '';
+        el.style.display = contenido ? '' : 'none';
+        if (!contenido) return;
+        if (typeof contenido === 'string') el.textContent = contenido; else el.appendChild(contenido);
     }
     function mostrarForm(si) { const f = document.getElementById('sol-form'); if (f) f.style.display = si ? '' : 'none'; }
+    // El campo de teléfono para canjear solo hace falta si este navegador no tiene su solicitud guardada
+    function actualizarTel() {
+        const el = document.getElementById('pago-tel'); if (!el) return;
+        const necesita = !solLeer();
+        el.style.display = necesita ? '' : 'none';
+        if (necesita && !el.value) el.value = telLeer();
+    }
+    function limpiarSol(mensaje) {
+        solGuardar(null); detenerSondeo(); mostrarForm(true); pintarEstado(mensaje || ''); actualizarTel();
+    }
 
     window.enviarSolicitud = async function () {
         const err = document.getElementById('pago-error'); err.textContent = '';
         const nombre = document.getElementById('sol-nombre').value.trim();
-        const ref = document.getElementById('sol-ref').value.replace(/\D/g, '');
+        const tel = soloDig(document.getElementById('sol-tel').value);
+        const ref = soloDig(document.getElementById('sol-ref').value);
         if (!nombre) { err.textContent = 'Escribe tu nombre.'; return; }
+        if (tel.length < 10) { err.textContent = 'Escribe tu número de teléfono (con código de área).'; return; }
         if (ref.length < 4) { err.textContent = 'Escribe al menos los últimos 4 dígitos de la referencia.'; return; }
         const btn = document.getElementById('sol-enviar'); const t = btn.textContent;
         btn.disabled = true; btn.textContent = 'Enviando…';
         try {
-            const r = await api('sol_crear', { nombre: nombre, ref: ref });
+            const r = await api('sol_crear', { nombre: nombre, ref: ref, tel: tel });
             if (!r.ok) {
-                err.textContent = r.error === 'accion' || r.error === 'servidor'
-                    ? 'El servidor no tiene instalada la parte de solicitudes (código: ' + r.error + ').'
+                err.textContent = r.error === 'datos' ? 'Revisa tu nombre, teléfono y referencia.'
                     : r.error === 'saturado' ? 'Hay demasiadas solicitudes pendientes. Intenta más tarde.'
+                    : r.error === 'accion' ? 'El servidor no tiene instalada la parte de solicitudes.'
                     : 'El servidor respondió con un error (' + (r.error || 'desconocido') + ').';
                 return;
             }
+            telGuardar(tel);
             solGuardar({ id: r.id, token: r.token });
+            actualizarTel();
             iniciarSondeo();
         } catch (e) {
-            err.textContent = 'No se pudo conectar con el servidor. Revisa tu conexión y que la URL del servidor esté bien puesta.';
+            err.textContent = 'No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.';
         } finally { btn.disabled = false; btn.textContent = t; }
     };
 
     async function consultar() {
-        const s = solLeer(); if (!s) { detenerSondeo(); mostrarForm(true); pintarEstado(''); return; }
+        const s = solLeer(); if (!s) { limpiarSol(); return; }
         let r; try { r = await api('sol_estado', { id: s.id, token: s.token }); } catch (e) { return; }
-        if (!r || !r.ok) { if (r && r.error === 'no_existe') { solGuardar(null); detenerSondeo(); mostrarForm(true); pintarEstado(''); } return; }
+        if (!r || !r.ok) { if (r && r.error === 'no_existe') limpiarSol(); return; }
         mostrarForm(false);
         const inp = document.getElementById('pago-input');
         if (r.estado === 'pendiente') {
@@ -3736,49 +3441,66 @@ function sha256hex(str) {
             const b = document.createElement('b'); b.textContent = r.pin;
             b.style.cssText = 'display:block;font-size:2rem;letter-spacing:.35em;margin:6px 0';
             w.appendChild(b);
-            w.appendChild(document.createTextNode('Sirve una sola vez. Pulsa Descargar.'));
+            w.appendChild(document.createTextNode('Sirve una sola vez. Pulsa Descargar. (También te lo enviamos por mensaje.)'));
             pintarEstado(w);
             if (inp && !inp.value) inp.value = r.pin;
         } else if (r.estado === 'rechazado') {
-            detenerSondeo(); solGuardar(null); mostrarForm(true);
-            pintarEstado('No pudimos verificar tu pago. Escríbenos por WhatsApp con tu comprobante.');
+            limpiarSol('No pudimos verificar tu pago. Escríbenos por WhatsApp con tu comprobante.');
+        } else if (r.estado === 'anulado') {
+            limpiarSol('Tu PIN fue anulado. Escríbenos por WhatsApp.');
         } else if (r.estado === 'bloqueado') {
-            detenerSondeo(); solGuardar(null); mostrarForm(true);
-            pintarEstado('Demasiados intentos fallidos con el PIN. Escríbenos por WhatsApp.');
+            limpiarSol('Demasiados intentos fallidos con el PIN. Escríbenos por WhatsApp.');
         } else if (r.estado === 'usado') {
-            detenerSondeo(); solGuardar(null); mostrarForm(true); pintarEstado('');
+            limpiarSol();
         }
     }
     function iniciarSondeo() { detenerSondeo(); consultar(); _timer = setInterval(consultar, 6000); }
     function detenerSondeo() { if (_timer) { clearInterval(_timer); _timer = null; } }
 
-    // Reanuda si el cliente cierra y vuelve a abrir el modal
     const _abrirPago0 = window.abrirPago, _cerrarPago0 = window.cerrarPago;
     window.abrirPago = function () {
         _abrirPago0.apply(this, arguments);
-        if (solLeer() && !window.__adminSesion) iniciarSondeo(); else { mostrarForm(true); pintarEstado(''); }
+        if (window.__adminSesion) return;
+        actualizarTel();
+        if (solLeer()) iniciarSondeo(); else { mostrarForm(true); pintarEstado(''); }
     };
     window.cerrarPago = function () { detenerSondeo(); _cerrarPago0.apply(this, arguments); };
 
-    // Canje del PIN (se llama desde validarCodigoLocal). Devuelve true si era un PIN y ya lo gestionó.
-    window.canjearPinSiAplica = async function () {
-        const v = (document.getElementById('pago-input').value || '').replace(/\s/g, '');
-        if (!/^\d{4}$/.test(v)) return false;
+    // Botón "Descargar": PIN de 4 dígitos (con la solicitud guardada, o con PIN + teléfono)
+    window.validarCodigoPago = async function () {
+        if (typeof descargandoTodas !== 'undefined' && descargandoTodas) return;
         const err = document.getElementById('pago-error');
-        const s = solLeer();
-        if (!s) { err.textContent = 'Primero solicita la verificación de tu pago con el botón verde.'; return true; }
+        const pin = soloDig(document.getElementById('pago-input').value);
+        if (pin.length !== 4) { err.textContent = 'Escribe tu PIN de 4 dígitos.'; return; }
+        let s = solLeer(), r;
         err.textContent = 'Verificando…';
-        let r; try { r = await api('sol_canjear', { id: s.id, token: s.token, pin: v }); }
-        catch (e) { err.textContent = 'No se pudo verificar el PIN. Revisa tu conexión e intenta de nuevo.'; return true; }
+        try {
+            if (s) {
+                r = await api('sol_canjear', { id: s.id, token: s.token, pin: pin });
+                if (!r.ok && r.error === 'no_existe') {   // la solicitud guardada ya no vale (por ejemplo, te lo reasignaron)
+                    solGuardar(null); s = null; actualizarTel(); mostrarForm(true); pintarEstado('');
+                    err.textContent = 'Escribe el teléfono con el que se te envió el PIN y vuelve a pulsar Descargar.';
+                    return;
+                }
+            } else {
+                const tel = soloDig(document.getElementById('pago-tel').value);
+                if (tel.length < 10) { err.textContent = 'Escribe tu número de teléfono.'; return; }
+                r = await api('sol_canjear_tel', { tel: tel, pin: pin });
+                if (r.ok) { telGuardar(tel); s = { id: r.id, token: r.token }; }
+            }
+        } catch (e) { err.textContent = 'No se pudo verificar el PIN. Revisa tu conexión e intenta de nuevo.'; return; }
         if (!r.ok) {
             err.textContent = r.error === 'pin' ? 'PIN incorrecto. Intentos restantes: ' + r.restantes + '.'
                 : r.error === 'pendiente' ? 'Tu pago aún no ha sido verificado. Espera la aprobación.'
                 : r.error === 'bloqueado' ? 'Demasiados intentos fallidos. Escríbenos por WhatsApp.'
                 : r.error === 'usado' ? 'Este PIN ya fue utilizado.'
-                : r.error === 'expirado' ? 'Este PIN venció. Solicita uno nuevo.'
+                : r.error === 'expirado' ? 'Este PIN venció. Escríbenos por WhatsApp.'
+                : r.error === 'rechazado' ? 'Tu solicitud fue rechazada. Escríbenos por WhatsApp.'
+                : r.error === 'anulado' ? 'Este PIN fue anulado. Escríbenos por WhatsApp.'
+                : r.error === 'datos' ? 'Revisa tu teléfono y tu PIN.'
                 : 'No se pudo verificar el PIN. Intenta de nuevo.';
-            if (r.error === 'usado' || r.error === 'expirado' || r.error === 'bloqueado') { solGuardar(null); mostrarForm(true); pintarEstado(''); }
-            return true;
+            if (['usado', 'expirado', 'bloqueado', 'rechazado', 'anulado'].indexOf(r.error) > -1 && solLeer()) limpiarSol();
+            return;
         }
         err.textContent = '';
         solGuardar(null); detenerSondeo();
@@ -3786,12 +3508,12 @@ function sha256hex(str) {
         window.__descargaFallo = false;
         await descargarTodas();
         if (window.__descargaFallo) { try { await api('sol_liberar', { id: s.id, token: s.token }); solGuardar(s); } catch (e) {} }
-        return true;
     };
 
-    // ---------------- Admin ----------------
+    // ---------------- Panel del administrador ----------------
     function hace(iso) {
-        const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+        const t = new Date(iso).getTime(); if (!t) return '—';
+        const m = Math.max(0, Math.round((Date.now() - t) / 60000));
         return m < 1 ? 'ahora' : m < 60 ? 'hace ' + m + ' min' : m < 1440 ? 'hace ' + Math.round(m / 60) + ' h' : 'hace ' + Math.round(m / 1440) + ' d';
     }
     function beep() {
@@ -3802,6 +3524,36 @@ function sha256hex(str) {
             o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.value = .08;
             o.start(); setTimeout(() => { o.stop(); c.close(); }, 250);
         } catch (e) {}
+    }
+    const ESTADOS = {
+        pendiente: ['#d9961a', 'rgba(240,182,74,.22)', 'PENDIENTE'],
+        aprobado:  ['#1e9e4f', 'rgba(30,158,79,.20)', 'APROBADO'],
+        usado:     ['#3b82f6', 'rgba(59,130,246,.22)', 'USADO ✓'],
+        anulado:   ['#e0565b', 'rgba(224,86,91,.20)', 'ANULADO'],
+        rechazado: ['#e0565b', 'rgba(224,86,91,.20)', 'RECHAZADO'],
+        bloqueado: ['#e0565b', 'rgba(224,86,91,.20)', 'BLOQUEADO']
+    };
+    function mensajePin(f) {
+        return 'Pago recibido, gracias. Tu PIN para descargar las 3 hojas de Datos Fijos es: ' + f.pin +
+            ' (sirve una sola vez). Si cerraste la página, vuelve a entrar, toca Descargar imágenes y escribe tu número de teléfono y este PIN.';
+    }
+    function btn(txt, fn, color) {
+        const b = document.createElement('button'); b.type = 'button'; b.className = 'pago-copiar'; b.textContent = txt;
+        if (color) b.style.cssText = 'background:' + color + ';border-color:' + color + ';color:#fff';
+        b.addEventListener('click', fn); return b;
+    }
+    function enlace(txt, href) {
+        const a = document.createElement('a'); a.className = 'pago-copiar'; a.textContent = txt; a.href = href;
+        a.target = '_blank'; a.rel = 'noopener'; a.style.textDecoration = 'none'; return a;
+    }
+    async function accionSol(accion, id, extra, b) {
+        if (b) b.disabled = true;
+        try {
+            const r = await api(accion, Object.assign({ h: _admH, id: id }, extra || {}));
+            if (!r.ok) document.getElementById('adm-error2').textContent = 'No se pudo completar (' + (r.error || '') + ').';
+            else document.getElementById('adm-error2').textContent = '';
+        } catch (e) { document.getElementById('adm-error2').textContent = 'No se pudo conectar con el servidor.'; }
+        cargarSolicitudes(true);
     }
     window.cargarSolicitudes = async function (silencioso) {
         if (!_admH) return;
@@ -3817,36 +3569,46 @@ function sha256hex(str) {
         filas.forEach(f => {
             const fila = document.createElement('div'); fila.className = 'adm-fila';
             const b = document.createElement('b'); b.textContent = f.nombre || 'Sin nombre'; fila.appendChild(b);
-            const bg = document.createElement('span'); bg.className = 'adm-badge ' + (f.estado === 'pendiente' ? 'usado' : 'disp');
-            bg.textContent = f.estado.toUpperCase(); fila.appendChild(bg);
+            const est = ESTADOS[f.estado] || ESTADOS.rechazado;
+            const bg = document.createElement('span'); bg.className = 'adm-badge'; bg.textContent = est[2];
+            bg.style.cssText = 'color:' + est[0] + ';background:' + est[1]; fila.appendChild(bg);
             const sm = document.createElement('small');
-            sm.textContent = 'Ref: ' + f.ref + '  ·  ' + hace(f.fecha) + (f.estado === 'aprobado' ? '  ·  PIN: ' + f.pin : '');
-            fila.appendChild(sm);
+            let info = (f.tel ? 'Tel: +' + f.tel + '  ·  ' : '') + 'Ref: ' + f.ref + '  ·  ' + hace(f.fecha);
+            if (f.pin) info += '  ·  PIN: ' + f.pin;
+            if (f.estado === 'usado') info += '  ·  Usado ' + hace(f.usado);
+            sm.textContent = info; fila.appendChild(sm);
+
+            const bts = document.createElement('div'); bts.className = 'adm-bts';
+            bts.style.cssText = 'grid-column:1/-1;flex-wrap:wrap;gap:6px';
+            const ir = (acc, extra, conf) => ev => { if (conf && !confirm(conf)) return; accionSol(acc, f.id, extra, ev.currentTarget); };
             if (f.estado === 'pendiente') {
-                const bts = document.createElement('div'); bts.className = 'adm-bts'; bts.style.gridColumn = '1 / -1';
-                const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'pago-copiar ok'; ok.textContent = 'Aceptar';
-                ok.style.cssText = 'background:#1e7a3c;border-color:#1e7a3c;color:#fff';
-                ok.addEventListener('click', () => resolverSolicitud('sol_aprobar', f.id, ok));
-                const no = document.createElement('button'); no.type = 'button'; no.className = 'pago-copiar'; no.textContent = 'Rechazar';
-                no.addEventListener('click', () => { if (confirm('¿Rechazar la solicitud de ' + (f.nombre || 'este cliente') + '?')) resolverSolicitud('sol_rechazar', f.id, no); });
-                bts.appendChild(ok); bts.appendChild(no); fila.appendChild(bts);
+                bts.appendChild(btn('Aceptar', ir('sol_aprobar'), '#1e7a3c'));
+                bts.appendChild(btn('Rechazar', ir('sol_rechazar', null, '¿Rechazar la solicitud de ' + (f.nombre || 'este cliente') + '?')));
             } else if (f.estado === 'aprobado') {
-                const bts = document.createElement('div'); bts.className = 'adm-bts'; bts.style.gridColumn = '1 / -1';
-                const wa = document.createElement('button'); wa.type = 'button'; wa.className = 'pago-copiar'; wa.textContent = 'Enviar PIN por WhatsApp';
-                wa.addEventListener('click', () => window.open('https://wa.me/?text=' + encodeURIComponent('Pago recibido, gracias. Tu PIN para descargar las 3 hojas de Datos Fijos es: ' + f.pin + ' (sirve una sola vez).'), '_blank', 'noopener'));
-                bts.appendChild(wa); fila.appendChild(bts);
+                const m = encodeURIComponent(mensajePin(f));
+                bts.appendChild(enlace('WhatsApp', 'https://wa.me/' + (f.tel || '') + '?text=' + m));
+                if (f.tel) bts.appendChild(enlace('Mensaje SMS', 'sms:+' + f.tel + '?body=' + m));
+                bts.appendChild(btn('Nuevo PIN', ir('sol_nuevopin', null, 'Se cambiará el PIN actual por uno nuevo. ¿Continuar?')));
+                bts.appendChild(btn('Pasar a otro cliente', ev => {
+                    const t = prompt('Teléfono del nuevo cliente (el mismo PIN ' + f.pin + ' le servirá a él):'); if (!t) return;
+                    const n = prompt('Nombre del nuevo cliente (opcional):', '') || '';
+                    accionSol('sol_reasignar', f.id, { tel: t, nombre: n }, ev.currentTarget);
+                }));
+                bts.appendChild(btn('Anular PIN', ir('sol_anular', null, '¿Borrar este PIN? Ya no servirá.')));
+            } else if (f.estado === 'usado') {
+                bts.appendChild(btn('Restablecer PIN', ir('sol_restablecer', null, 'El mismo PIN volverá a quedar disponible para usarse otra vez. ¿Continuar?')));
+                bts.appendChild(btn('Pasar a otro cliente', ev => {
+                    const t = prompt('Teléfono del nuevo cliente (el PIN ' + f.pin + ' quedará disponible para él):'); if (!t) return;
+                    const n = prompt('Nombre del nuevo cliente (opcional):', '') || '';
+                    accionSol('sol_reasignar', f.id, { tel: t, nombre: n }, ev.currentTarget);
+                }));
+            } else {
+                bts.appendChild(btn('Reactivar', ir('sol_restablecer', null, 'Se reactivará esta solicitud con un PIN disponible. ¿Continuar?')));
             }
+            fila.appendChild(bts);
             cont.appendChild(fila);
         });
     };
-    async function resolverSolicitud(accion, id, btn) {
-        btn.disabled = true;
-        try {
-            const r = await api(accion, { h: _admH, id: id });
-            if (!r.ok) document.getElementById('adm-error2').textContent = 'No se pudo completar (' + (r.error || '') + ').';
-        } catch (e) { document.getElementById('adm-error2').textContent = 'No se pudo conectar con el servidor.'; }
-        cargarSolicitudes(true);
-    }
     // Actualización automática mientras el panel está abierto
     setInterval(() => {
         const ov = document.getElementById('adm-overlay');
@@ -3855,6 +3617,7 @@ function sha256hex(str) {
 })();
 </script>
 </body>
+
 
     <script>
     // =====================================================
