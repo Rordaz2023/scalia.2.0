@@ -3074,12 +3074,18 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             <div class="pago-fila"><b style="text-align:left">rordaz2023@gmail.com</b><button type="button" class="pago-copiar" data-copiar="rordaz2023@gmail.com">Copiar</button></div>
         </div>
 
-        <p class="pago-nota">Cuando se reciba tu pago, se te liberan las 3 hojas.</p>
-        <button type="button" class="pago-ws" onclick="avisarPagoWhatsApp()">Ya pagué: avisar por WhatsApp</button>
+        <p class="pago-nota">Cuando se verifique tu pago, recibirás un PIN de 4 dígitos para descargar las 3 hojas.</p>
+        <div id="sol-form">
+            <input class="adm-campo" type="text" id="sol-nombre" maxlength="40" autocomplete="name" placeholder="Tu nombre">
+            <input class="adm-campo" type="text" id="sol-ref" maxlength="12" inputmode="numeric" autocomplete="off" placeholder="Referencia del pago (últimos dígitos)">
+            <button type="button" class="pago-ws" id="sol-enviar" style="margin-top:12px" onclick="enviarSolicitud()">Ya pagué: solicitar verificación</button>
+        </div>
+        <div class="pago-nota" id="sol-estado" style="display:none" role="status" aria-live="polite"></div>
+        <button type="button" class="pago-copiar" style="display:block;margin:0 auto 14px" onclick="avisarPagoWhatsApp()">Enviar comprobante por WhatsApp (opcional)</button>
 
-        <p class="pago-label">¿Ya te confirmaron el pago? Ingresa tu código</p>
+        <p class="pago-label">¿Ya te aprobaron el pago? Ingresa tu PIN</p>
         <div class="pago-codigo">
-            <input type="text" id="pago-input" placeholder="Ej: RDN-ABCD-EFGH-JKLM" autocomplete="off" onkeydown="if(event.key==='Enter')validarCodigoPago()">
+            <input type="text" id="pago-input" placeholder="PIN de 4 dígitos" inputmode="numeric" autocomplete="off" onkeydown="if(event.key==='Enter')validarCodigoPago()">
             <button type="button" class="btn-rojo" onclick="validarCodigoPago()">Descargar</button>
         </div>
         <div class="pago-error" id="pago-error" role="alert"></div>
@@ -3277,6 +3283,7 @@ function sha256hex(str) {
         if (typeof descargandoTodas !== 'undefined' && descargandoTodas) return;
         let c = document.getElementById('pago-input').value.toUpperCase().replace(/[^A-Z0-9]/g, '');
         if (c.length === 8 || c.length === 12) c = 'RDN' + c;
+        if (await canjearPinSiAplica()) return;
         if (API_URL) {
             if (!c) { err.textContent = 'Escribe tu código.'; return; }
             err.textContent = 'Verificando…';
@@ -3453,6 +3460,8 @@ function sha256hex(str) {
 
         <div id="adm-panel" style="display:none">
             <p class="adm-aviso" id="adm-modo"></p>
+            <div class="adm-hist-t"><span>Solicitudes de pago <span class="adm-chip usado" id="sol-cuenta">0</span></span><span><button type="button" class="pago-copiar" onclick="cargarSolicitudes()">Actualizar</button></span></div>
+            <div class="adm-hist" id="sol-lista" style="margin-bottom:14px"><div class="adm-vacio">Sin solicitudes.</div></div>
             <div class="adm-nuevo"><button type="button" class="btn-rojo" id="adm-descargar" onclick="descargaAdmin()">Descargar las 3 hojas (sin código)</button></div>
             <div class="adm-nuevo"><button type="button" class="btn-borde" onclick="nuevoCodigoAdmin()">Generar código nuevo</button></div>
             <div class="adm-codigo" id="adm-resultado" style="display:none">
@@ -3570,6 +3579,7 @@ function sha256hex(str) {
             ? 'Conectado a tu hoja de Google: aquí ves qué códigos ya fueron usados.'
             : 'Modo local: este panel no puede ver si un código ya se usó. Conecta tu hoja de Google para tener el registro de canjes.';
         renderLista();
+        if (window.cargarSolicitudes) cargarSolicitudes(true);
         if (window.actualizarHuellaUI) actualizarHuellaUI();
     }
 
@@ -3666,6 +3676,178 @@ function sha256hex(str) {
     document.addEventListener('DOMContentLoaded', revisarHashAdmin);
     if (document.readyState !== 'loading') revisarHashAdmin();
     document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarAdmin(); });
+</script>
+<script>
+// =====================================================
+// SOLICITUDES DE PAGO + PIN DE 4 DÍGITOS (un solo uso)
+// Cliente: solicita verificación -> el admin acepta -> el PIN le llega solo a su pantalla.
+// =====================================================
+(function () {
+    const LLAVE_SOL = 'df_solicitud';
+    let _timer = null, _memSol = null, _prevPend = -1;
+
+    function solLeer() { try { return JSON.parse(localStorage.getItem(LLAVE_SOL) || 'null'); } catch (e) { return _memSol; } }
+    function solGuardar(v) { _memSol = v; try { v ? localStorage.setItem(LLAVE_SOL, JSON.stringify(v)) : localStorage.removeItem(LLAVE_SOL); } catch (e) {} }
+    window.solLeer = solLeer; window.solGuardar = solGuardar;
+
+    function pintarEstado(html, tipo) {
+        const el = document.getElementById('sol-estado');
+        el.style.display = html ? '' : 'none';
+        el.textContent = ''; if (!html) return;
+        if (typeof html === 'string') el.textContent = html; else el.appendChild(html);
+    }
+    function mostrarForm(si) { const f = document.getElementById('sol-form'); if (f) f.style.display = si ? '' : 'none'; }
+
+    window.enviarSolicitud = async function () {
+        const err = document.getElementById('pago-error'); err.textContent = '';
+        const nombre = document.getElementById('sol-nombre').value.trim();
+        const ref = document.getElementById('sol-ref').value.replace(/\D/g, '');
+        if (!nombre) { err.textContent = 'Escribe tu nombre.'; return; }
+        if (ref.length < 4) { err.textContent = 'Escribe al menos los últimos 4 dígitos de la referencia.'; return; }
+        const btn = document.getElementById('sol-enviar'); const t = btn.textContent;
+        btn.disabled = true; btn.textContent = 'Enviando…';
+        try {
+            const r = await api('sol_crear', { nombre: nombre, ref: ref });
+            if (!r.ok) throw new Error(r.error || 'error');
+            solGuardar({ id: r.id, token: r.token });
+            iniciarSondeo();
+        } catch (e) {
+            err.textContent = 'No se pudo enviar la solicitud. Revisa tu conexión e intenta de nuevo.';
+        } finally { btn.disabled = false; btn.textContent = t; }
+    };
+
+    async function consultar() {
+        const s = solLeer(); if (!s) { detenerSondeo(); mostrarForm(true); pintarEstado(''); return; }
+        let r; try { r = await api('sol_estado', { id: s.id, token: s.token }); } catch (e) { return; }
+        if (!r || !r.ok) { if (r && r.error === 'no_existe') { solGuardar(null); detenerSondeo(); mostrarForm(true); pintarEstado(''); } return; }
+        mostrarForm(false);
+        const inp = document.getElementById('pago-input');
+        if (r.estado === 'pendiente') {
+            pintarEstado('⏳ Solicitud enviada. Estamos verificando tu pago; esta pantalla se actualiza sola.');
+        } else if (r.estado === 'aprobado') {
+            detenerSondeo();
+            const w = document.createElement('div');
+            w.appendChild(document.createTextNode('✅ ¡Pago verificado! Tu PIN es:'));
+            const b = document.createElement('b'); b.textContent = r.pin;
+            b.style.cssText = 'display:block;font-size:2rem;letter-spacing:.35em;margin:6px 0';
+            w.appendChild(b);
+            w.appendChild(document.createTextNode('Sirve una sola vez. Pulsa Descargar.'));
+            pintarEstado(w);
+            if (inp && !inp.value) inp.value = r.pin;
+        } else if (r.estado === 'rechazado') {
+            detenerSondeo(); solGuardar(null); mostrarForm(true);
+            pintarEstado('No pudimos verificar tu pago. Escríbenos por WhatsApp con tu comprobante.');
+        } else if (r.estado === 'bloqueado') {
+            detenerSondeo(); solGuardar(null); mostrarForm(true);
+            pintarEstado('Demasiados intentos fallidos con el PIN. Escríbenos por WhatsApp.');
+        } else if (r.estado === 'usado') {
+            detenerSondeo(); solGuardar(null); mostrarForm(true); pintarEstado('');
+        }
+    }
+    function iniciarSondeo() { detenerSondeo(); consultar(); _timer = setInterval(consultar, 6000); }
+    function detenerSondeo() { if (_timer) { clearInterval(_timer); _timer = null; } }
+
+    // Reanuda si el cliente cierra y vuelve a abrir el modal
+    const _abrirPago0 = window.abrirPago, _cerrarPago0 = window.cerrarPago;
+    window.abrirPago = function () {
+        _abrirPago0.apply(this, arguments);
+        if (solLeer() && !window.__adminSesion) iniciarSondeo(); else { mostrarForm(true); pintarEstado(''); }
+    };
+    window.cerrarPago = function () { detenerSondeo(); _cerrarPago0.apply(this, arguments); };
+
+    // Canje del PIN (se llama desde validarCodigoLocal). Devuelve true si era un PIN y ya lo gestionó.
+    window.canjearPinSiAplica = async function () {
+        const v = (document.getElementById('pago-input').value || '').replace(/\s/g, '');
+        if (!/^\d{4}$/.test(v)) return false;
+        const err = document.getElementById('pago-error');
+        const s = solLeer();
+        if (!s) { err.textContent = 'Primero solicita la verificación de tu pago con el botón verde.'; return true; }
+        err.textContent = 'Verificando…';
+        let r; try { r = await api('sol_canjear', { id: s.id, token: s.token, pin: v }); }
+        catch (e) { err.textContent = 'No se pudo verificar el PIN. Revisa tu conexión e intenta de nuevo.'; return true; }
+        if (!r.ok) {
+            err.textContent = r.error === 'pin' ? 'PIN incorrecto. Intentos restantes: ' + r.restantes + '.'
+                : r.error === 'pendiente' ? 'Tu pago aún no ha sido verificado. Espera la aprobación.'
+                : r.error === 'bloqueado' ? 'Demasiados intentos fallidos. Escríbenos por WhatsApp.'
+                : r.error === 'usado' ? 'Este PIN ya fue utilizado.'
+                : r.error === 'expirado' ? 'Este PIN venció. Solicita uno nuevo.'
+                : 'No se pudo verificar el PIN. Intenta de nuevo.';
+            if (r.error === 'usado' || r.error === 'expirado' || r.error === 'bloqueado') { solGuardar(null); mostrarForm(true); pintarEstado(''); }
+            return true;
+        }
+        err.textContent = '';
+        solGuardar(null); detenerSondeo();
+        cerrarPago();
+        window.__descargaFallo = false;
+        await descargarTodas();
+        if (window.__descargaFallo) { try { await api('sol_liberar', { id: s.id, token: s.token }); solGuardar(s); } catch (e) {} }
+        return true;
+    };
+
+    // ---------------- Admin ----------------
+    function hace(iso) {
+        const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+        return m < 1 ? 'ahora' : m < 60 ? 'hace ' + m + ' min' : m < 1440 ? 'hace ' + Math.round(m / 60) + ' h' : 'hace ' + Math.round(m / 1440) + ' d';
+    }
+    function beep() {
+        try { if (navigator.vibrate) navigator.vibrate([200, 100, 200]); } catch (e) {}
+        try {
+            const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
+            const c = new C(), o = c.createOscillator(), g = c.createGain();
+            o.connect(g); g.connect(c.destination); o.frequency.value = 880; g.gain.value = .08;
+            o.start(); setTimeout(() => { o.stop(); c.close(); }, 250);
+        } catch (e) {}
+    }
+    window.cargarSolicitudes = async function (silencioso) {
+        if (!_admH) return;
+        let r; try { r = await api('sol_listar', { h: _admH }); } catch (e) { if (!silencioso) document.getElementById('adm-error2').textContent = 'No se pudo cargar las solicitudes.'; return; }
+        if (!r.ok) { if (!silencioso) document.getElementById('adm-error2').textContent = 'No se pudo cargar las solicitudes (' + (r.error || '') + ').'; return; }
+        const filas = r.filas || [];
+        const pend = filas.filter(f => f.estado === 'pendiente').length;
+        if (_prevPend >= 0 && pend > _prevPend) beep();
+        _prevPend = pend;
+        document.getElementById('sol-cuenta').textContent = pend + ' pendiente' + (pend === 1 ? '' : 's');
+        const cont = document.getElementById('sol-lista'); cont.textContent = '';
+        if (!filas.length) { const d = document.createElement('div'); d.className = 'adm-vacio'; d.textContent = 'Sin solicitudes.'; cont.appendChild(d); return; }
+        filas.forEach(f => {
+            const fila = document.createElement('div'); fila.className = 'adm-fila';
+            const b = document.createElement('b'); b.textContent = f.nombre || 'Sin nombre'; fila.appendChild(b);
+            const bg = document.createElement('span'); bg.className = 'adm-badge ' + (f.estado === 'pendiente' ? 'usado' : 'disp');
+            bg.textContent = f.estado.toUpperCase(); fila.appendChild(bg);
+            const sm = document.createElement('small');
+            sm.textContent = 'Ref: ' + f.ref + '  ·  ' + hace(f.fecha) + (f.estado === 'aprobado' ? '  ·  PIN: ' + f.pin : '');
+            fila.appendChild(sm);
+            if (f.estado === 'pendiente') {
+                const bts = document.createElement('div'); bts.className = 'adm-bts'; bts.style.gridColumn = '1 / -1';
+                const ok = document.createElement('button'); ok.type = 'button'; ok.className = 'pago-copiar ok'; ok.textContent = 'Aceptar';
+                ok.style.cssText = 'background:#1e7a3c;border-color:#1e7a3c;color:#fff';
+                ok.addEventListener('click', () => resolverSolicitud('sol_aprobar', f.id, ok));
+                const no = document.createElement('button'); no.type = 'button'; no.className = 'pago-copiar'; no.textContent = 'Rechazar';
+                no.addEventListener('click', () => { if (confirm('¿Rechazar la solicitud de ' + (f.nombre || 'este cliente') + '?')) resolverSolicitud('sol_rechazar', f.id, no); });
+                bts.appendChild(ok); bts.appendChild(no); fila.appendChild(bts);
+            } else if (f.estado === 'aprobado') {
+                const bts = document.createElement('div'); bts.className = 'adm-bts'; bts.style.gridColumn = '1 / -1';
+                const wa = document.createElement('button'); wa.type = 'button'; wa.className = 'pago-copiar'; wa.textContent = 'Enviar PIN por WhatsApp';
+                wa.addEventListener('click', () => window.open('https://wa.me/?text=' + encodeURIComponent('Pago recibido, gracias. Tu PIN para descargar las 3 hojas de Datos Fijos es: ' + f.pin + ' (sirve una sola vez).'), '_blank', 'noopener'));
+                bts.appendChild(wa); fila.appendChild(bts);
+            }
+            cont.appendChild(fila);
+        });
+    };
+    async function resolverSolicitud(accion, id, btn) {
+        btn.disabled = true;
+        try {
+            const r = await api(accion, { h: _admH, id: id });
+            if (!r.ok) document.getElementById('adm-error2').textContent = 'No se pudo completar (' + (r.error || '') + ').';
+        } catch (e) { document.getElementById('adm-error2').textContent = 'No se pudo conectar con el servidor.'; }
+        cargarSolicitudes(true);
+    }
+    // Actualización automática mientras el panel está abierto
+    setInterval(() => {
+        const ov = document.getElementById('adm-overlay');
+        if (_admH && ov && ov.classList.contains('abierto') && !document.hidden) cargarSolicitudes(true);
+    }, 8000);
+})();
 </script>
 </body>
 
