@@ -2322,6 +2322,15 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
             }
         }
 
+        const NOMBRES_ANIMAL = {'0':'Delfín','00':'Ballena','1':'Carnero','2':'Toro','3':'Ciempiés','4':'Alacrán','5':'León','6':'Rana','7':'Perico','8':'Ratón','9':'Águila','10':'Tigre','11':'Gato','12':'Caballo','13':'Mono','14':'Paloma','15':'Zorro','16':'Oso','17':'Pavo','18':'Burro','19':'Chivo','20':'Cochino','21':'Gallo','22':'Camello','23':'Cebra','24':'Iguana','25':'Gallina','26':'Vaca','27':'Perro','28':'Zamuro','29':'Elefante','30':'Caimán','31':'Lapa','32':'Ardilla','33':'Pescado','34':'Venado','35':'Jirafa','36':'Culebra'};
+        function ponerFichaRespaldo(img, key) {
+            const nombre = NOMBRES_ANIMAL[key] || '';
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><radialGradient id="g" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffd24a"/><stop offset="1" stop-color="#d9531e"/></radialGradient></defs><circle cx="50" cy="50" r="47" fill="url(#g)" stroke="#fff" stroke-width="4"/><text x="50" y="52" text-anchor="middle" font-family="Arial,sans-serif" font-weight="900" font-size="38" fill="#fff" stroke="#6b2200" stroke-width="1.5">' + String(key).padStart(2, '0') + '</text><text x="50" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="15" fill="#fff" stroke="#6b2200" stroke-width=".8">' + nombre.toUpperCase() + '</text></svg>';
+            img.onload = img.onerror = null;
+            img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+            img.style.display = 'block';
+        }
+
         function mostrarAnimal(indexDia, numero, intento) {
             const img = document.getElementById(`animal-${indexDia}`);
             if (!img) return;
@@ -2332,6 +2341,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
                     img.style.display = ok ? 'block' : 'none';
                     /* si no cargó (red lenta, imágenes que llegan tarde) reintenta en vez de quitar la ficha para siempre */
                     if (!ok && n < 4) setTimeout(() => { if (img.dataset.num === key) mostrarAnimal(indexDia, numero, n + 1); }, 1200 * (n + 1));
+                    else if (!ok) ponerFichaRespaldo(img, key);   // si la imagen no existe, se dibuja la ficha con su número y nombre
                 });
             } else {
                 img.onerror = () => { img.style.display = 'none'; };
@@ -5024,7 +5034,7 @@ html[data-tema="oscuro"] .hero p, html[data-tema="oscuro"] .vista-sub { color: #
 /* Carga robusta de fichas: prueba varias claves/extensiones y no se rinde a la primera */
 (function () {
     'use strict';
-    var EXT = ['png', 'webp', 'jpg', 'jpeg'];
+    var EXT = ['png', 'webp', 'jpg', 'jpeg', 'PNG', 'WEBP', 'JPG', 'JPEG'];
     function claves(n) {
         n = String(n);
         if (n === '0' || n === '00') return [n];                       /* 0 = Delfín y 00 = Ballena nunca se mezclan */
