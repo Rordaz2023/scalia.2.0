@@ -17,6 +17,18 @@
  * Luego: Implementar > Administrar implementaciones > editar > Nueva versión > Implementar.
  * La URL /exec no cambia.
  *
+ * AVISOS AUTOMÁTICOS A TU TELÉFONO (opcionales, se activan con propiedades del script):
+ *   Por WhatsApp (servicio gratuito CallMeBot, de terceros):
+ *     1) Guarda el número +34 644 51 95 23 en tus contactos.
+ *     2) Por WhatsApp envíale exactamente: I allow callmebot to send me messages
+ *     3) Te responde con una apikey. Crea estas propiedades:
+ *          CALLMEBOT_PHONE = 584123334053
+ *          CALLMEBOT_KEY   = (la apikey que te dio)
+ *   Por correo (llega como notificación al teléfono con la app de Gmail):
+ *          NOTIFY_EMAIL    = tucorreo@gmail.com
+ *   Avisa cuando: un cliente envía una solicitud y cuando un cliente canjea su PIN y descarga.
+ *   La primera vez que se use el correo, Google te pedirá autorizar el permiso de envío.
+ *
  * Se crea sola una pestaña "Solicitudes" con: ID, Token, Fecha, Nombre, Referencia, Estado, PIN, Intentos, Aprobado, Usado.
  */
 
@@ -41,6 +53,20 @@ function solicitudesApi_(d) {
     }
     return { ok: false, error: 'accion' };
   } finally { lock.releaseLock(); }
+}
+
+// ---------- avisos al administrador ----------
+function notificar_(texto) {
+  var pr = PropertiesService.getScriptProperties();
+  try {
+    var key = pr.getProperty('CALLMEBOT_KEY'), tel = pr.getProperty('CALLMEBOT_PHONE') || '584123334053';
+    if (key) UrlFetchApp.fetch('https://api.callmebot.com/whatsapp.php?phone=' + encodeURIComponent(tel) +
+      '&text=' + encodeURIComponent(texto) + '&apikey=' + encodeURIComponent(key), { muteHttpExceptions: true });
+  } catch (e) {}
+  try {
+    var mail = pr.getProperty('NOTIFY_EMAIL');
+    if (mail) MailApp.sendEmail(mail, 'Datos Fijos: aviso', texto);
+  } catch (e) {}
 }
 
 // ---------- utilidades ----------
@@ -98,6 +124,7 @@ function solCrear_(d) {
   var id = idCorto_(), token = Utilities.getUuid().replace(/-/g, '');
   sh.appendRow([id, token, new Date().toISOString(), nombre, ref, 'pendiente', '', 0, '', '']);
   sh.getRange(sh.getLastRow(), 5).setNumberFormat('@').setValue(ref);
+  notificar_('Nueva solicitud de pago de ' + nombre + ' (ref ' + ref + '). Entra a tu panel (#admin) para aceptarla.');
   return { ok: true, id: id, token: token };
 }
 function solEstado_(d) {
@@ -129,6 +156,7 @@ function solCanjear_(d) {
   // PIN correcto: se quema de inmediato (un solo uso)
   sh.getRange(reg.fila, 6).setValue('usado');
   sh.getRange(reg.fila, 10).setValue(new Date().toISOString());
+  notificar_(String(reg.v[3]) + ' usó su PIN y está descargando las 3 hojas.');
   return { ok: true };
 }
 // Si la descarga falló en el teléfono del cliente, se le devuelve el PIN (mismo token, un solo intento extra)
