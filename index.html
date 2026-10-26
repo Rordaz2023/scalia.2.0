@@ -3707,11 +3707,17 @@ function sha256hex(str) {
         btn.disabled = true; btn.textContent = 'Enviando…';
         try {
             const r = await api('sol_crear', { nombre: nombre, ref: ref });
-            if (!r.ok) throw new Error(r.error || 'error');
+            if (!r.ok) {
+                err.textContent = r.error === 'accion' || r.error === 'servidor'
+                    ? 'El servidor no tiene instalada la parte de solicitudes (código: ' + r.error + ').'
+                    : r.error === 'saturado' ? 'Hay demasiadas solicitudes pendientes. Intenta más tarde.'
+                    : 'El servidor respondió con un error (' + (r.error || 'desconocido') + ').';
+                return;
+            }
             solGuardar({ id: r.id, token: r.token });
             iniciarSondeo();
         } catch (e) {
-            err.textContent = 'No se pudo enviar la solicitud. Revisa tu conexión e intenta de nuevo.';
+            err.textContent = 'No se pudo conectar con el servidor. Revisa tu conexión y que la URL del servidor esté bien puesta.';
         } finally { btn.disabled = false; btn.textContent = t; }
     };
 
