@@ -1466,8 +1466,7 @@ html[data-tema="oscuro"] .visor-puntos i.on { background: var(--rojo); }
         .gal-acc a { padding: 6px 12px; border-radius: 999px; background: #d3141b; color: #fff; text-decoration: none; font-weight: 600; font-size: .8rem; }
         .gal-acc a:last-child { background: #1d1d22; }
         .es-admin #btn-descargar-todas::after { content: "· Admin"; font-size: .72em; opacity: .85; margin-left: 4px; }
-        /* «Descargar imágenes»: solo se muestra con la sesión de administrador iniciada */
-        body:not(.es-admin) #btn-descargar-todas { display: none !important; }
+        /* «Descargar imágenes»: visible para todos; los clientes abren el modal de pago, el administrador descarga directo */
         [data-tema="oscuro"] .galeria-rapida { background: rgba(30,30,34,.85); border-color: rgba(255,255,255,.12); color: #f2f2f5; }
     </style>
 <style id="pata-css">
